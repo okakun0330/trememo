@@ -7,8 +7,12 @@
   box-sizing: border-box;
 }
 
+html {
+  background-color: #080808;
+}
+
 body {
-  background-color: #0B0B0D;
+  background-color: #080808;
   color: #ffffff;
   overscroll-behavior: none;
 }
@@ -16,4 +20,15 @@ body {
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
+}
+
+/* Photo card gradient utility */
+.photo-card-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.96) 0%,
+    rgba(0, 0, 0, 0.65) 40%,
+    rgba(0, 0, 0, 0.2) 70%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
 }

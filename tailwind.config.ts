@@ -7,7 +7,14 @@ const config: Config = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        bebas: ['var(--font-bebas)', 'Impact', 'sans-serif'],
+      },
+      letterSpacing: {
+        'widest2': '0.2em',
+      },
+    },
   },
   plugins: [],
 };

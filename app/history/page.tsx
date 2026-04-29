@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSessions, getPersonalBests } from '@/lib/storage';
 import { BODY_PART_LABELS, PersonalBest, WorkoutSession } from '@/lib/types';
+import WorkoutCalendar from '../components/WorkoutCalendar';
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -16,25 +17,33 @@ function formatDuration(seconds: number): string {
 function Empty({ message }: { message: string }) {
   return (
     <div className="text-center py-24">
-      <div className="w-12 h-12 rounded-full border border-[#1F1F1F] flex items-center justify-center mx-auto mb-4">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#444" strokeWidth="1.5" strokeLinecap="round">
-          <circle cx="10" cy="10" r="8" />
-          <path d="M10 6v4M10 14v.5" />
+      <div className="w-10 h-10 rounded-full border border-[#1F1F1F] flex items-center justify-center mx-auto mb-4">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="8" cy="8" r="6" />
+          <path d="M8 5v3M8 10v.5" />
         </svg>
       </div>
-      <p className="text-[#444] text-sm">{message}</p>
+      <p className="text-[#333] text-sm">{message}</p>
     </div>
   );
 }
+
+const TABS = [
+  { key: 'calendar', label: 'カレンダー' },
+  { key: 'history',  label: '履歴' },
+  { key: 'pbs',      label: '自己ベスト' },
+] as const;
+type Tab = typeof TABS[number]['key'];
 
 export default function HistoryPage() {
   const router = useRouter();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [pbs, setPBs] = useState<PersonalBest[]>([]);
-  const [tab, setTab] = useState<'history' | 'pbs'>('history');
+  const [tab, setTab] = useState<Tab>('calendar');
 
   useEffect(() => {
-    setSessions([...getSessions()].reverse());
+    const all = getSessions();
+    setSessions([...all].reverse());         // newest first for list
     setPBs(Object.values(getPersonalBests()).sort((a, b) => b.estimated1RM - a.estimated1RM));
   }, []);
 
@@ -59,20 +68,33 @@ export default function HistoryPage() {
       {/* Tabs */}
       <div className="px-6 mb-6">
         <div className="flex bg-[#111] border border-[#1F1F1F] rounded-xl p-1 gap-1">
-          {(['history', 'pbs'] as const).map((t) => (
+          {TABS.map(({ key, label }) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-colors ${
-                tab === t ? 'bg-[#00FF88] text-[#0A0A0A]' : 'text-[#555]'
+              key={key}
+              onClick={() => setTab(key)}
+              className={`flex-1 py-2.5 rounded-lg font-bold text-xs transition-colors ${
+                tab === key ? 'bg-[#00FF88] text-[#0A0A0A]' : 'text-[#555]'
               }`}
             >
-              {t === 'history' ? 'トレーニング履歴' : '自己ベスト'}
+              {label}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Calendar tab */}
+      {tab === 'calendar' && (
+        <div className="px-6">
+          {sessions.length === 0 ? (
+            <Empty message="まだトレーニング記録がありません" />
+          ) : (
+            /* Calendar receives sessions in chronological order */
+            <WorkoutCalendar sessions={[...sessions].reverse()} />
+          )}
+        </div>
+      )}
+
+      {/* History tab */}
       {tab === 'history' && (
         <div className="px-6">
           {sessions.length === 0 ? (
@@ -89,7 +111,9 @@ export default function HistoryPage() {
                         <span className="text-[#444] text-sm ml-3">{fmtDate(session.date)}</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs text-[#444]">{session.durationSeconds > 0 ? formatDuration(session.durationSeconds) : '―'}</div>
+                        {session.durationSeconds > 0 && (
+                          <div className="text-xs text-[#444]">{formatDuration(session.durationSeconds)}</div>
+                        )}
                         <div className="text-xs text-[#555] mt-0.5">{totalSets}セット</div>
                       </div>
                     </div>
@@ -97,9 +121,9 @@ export default function HistoryPage() {
                       {session.exercises.map((ex, i) => (
                         <div key={i} className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <span className="text-[#888] text-sm">{ex.exerciseName}</span>
+                            <span className="text-[#777] text-sm">{ex.exerciseName}</span>
                             {ex.isNewPB && (
-                              <span className="text-[10px] text-[#00FF88] font-bold border border-[#00FF88]/30 px-1.5 py-0.5 rounded">
+                              <span className="text-[9px] text-[#00FF88] font-bold border border-[#00FF88]/25 px-1.5 py-0.5 rounded">
                                 PB
                               </span>
                             )}
@@ -116,6 +140,7 @@ export default function HistoryPage() {
         </div>
       )}
 
+      {/* PBs tab */}
       {tab === 'pbs' && (
         <div className="px-6">
           {pbs.length === 0 ? (
@@ -135,7 +160,7 @@ export default function HistoryPage() {
                       {pb.weight % 1 === 0 ? pb.weight : pb.weight.toFixed(1)}
                     </span>
                     <span className="text-[#555] text-sm">kg</span>
-                    <span className="text-[#333] text-xl font-light mx-2">×</span>
+                    <span className="text-[#2a2a2a] text-xl font-light mx-2">×</span>
                     <span className="text-4xl font-black text-[#3B82F6]">{pb.reps}</span>
                     <span className="text-[#555] text-sm">回</span>
                   </div>
