@@ -2,10 +2,34 @@ import {
   BodyPart,
   CurrentSession,
   Exercise,
+  ExerciseType,
   PersonalBest,
   WorkoutSession,
   WorkoutSet,
 } from './types';
+
+// ── Exercise type classifier ──────────────────────────────────────────────────
+
+export function classifyExercise(name: string): ExerciseType {
+  const lower = name.toLowerCase();
+  const cardioWords = [
+    'ランニング', 'ジョギング', 'ウォーキング', 'バイク', '自転車', 'エアロバイク',
+    'ステッパー', 'トレッドミル', '水泳', 'スイミング', 'ロープ', '縄跳び',
+    'サイクリング', 'マラソン', 'ウォーク', 'ランナー', '有酸素', 'ローイング',
+    'running', 'jogging', 'cycling', 'swimming', 'cardio', 'bike', 'walk',
+    'treadmill', 'rowing', 'elliptical', 'jump rope', 'skipping',
+  ];
+  const bwWords = [
+    '懸垂', '腕立て', 'プッシュアップ', 'ディップス', 'プランク', 'クランチ',
+    'シットアップ', 'バーピー', 'チンアップ', 'プルアップ', 'レッグレイズ',
+    'マウンテンクライマー', '自重',
+    'pullup', 'chinup', 'pushup', 'push-up', 'dips', 'plank', 'burpee',
+    'crunch', 'situp', 'bodyweight', 'leg raise',
+  ];
+  if (cardioWords.some((w) => lower.includes(w))) return 'CARDIO';
+  if (bwWords.some((w) => lower.includes(w))) return 'BODYWEIGHT';
+  return 'WEIGHT';
+}
 
 const KEYS = {
   EXERCISES: 'trememo_exercises',
@@ -45,7 +69,11 @@ export function getExercisesByBodyPart(bodyPart: BodyPart): Exercise[] {
     });
 }
 
-export function addOrUpdateExercise(name: string, bodyPart: BodyPart): Exercise {
+export function addOrUpdateExercise(
+  name: string,
+  bodyPart: BodyPart,
+  exerciseType?: ExerciseType
+): Exercise {
   const exercises = getExercises();
   const existing = exercises.find(
     (e) => e.name.toLowerCase() === name.toLowerCase() && e.bodyPart === bodyPart
@@ -53,6 +81,7 @@ export function addOrUpdateExercise(name: string, bodyPart: BodyPart): Exercise 
   if (existing) {
     existing.usageCount += 1;
     existing.lastUsed = new Date().toISOString();
+    if (exerciseType) existing.exerciseType = exerciseType;
     setItem(KEYS.EXERCISES, exercises);
     return existing;
   }
@@ -60,6 +89,7 @@ export function addOrUpdateExercise(name: string, bodyPart: BodyPart): Exercise 
     id: `ex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     name,
     bodyPart,
+    exerciseType: exerciseType ?? classifyExercise(name),
     usageCount: 1,
     lastUsed: new Date().toISOString(),
   };

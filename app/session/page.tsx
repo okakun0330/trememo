@@ -13,13 +13,35 @@ import {
   setCurrentSession,
   saveSession,
   getTodaySavedSets,
+  classifyExercise,
 } from '@/lib/storage';
-import { BODY_PART_LABELS, BodyPart, Exercise, ExerciseRecord, WorkoutSet } from '@/lib/types';
+import {
+  BODY_PART_LABELS, BodyPart, Exercise, ExerciseRecord,
+  ExerciseType, WorkoutSet,
+} from '@/lib/types';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
 const ALL_BODY_PARTS: BodyPart[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'abs', 'cardio'];
 
-// ── Timer ─────────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function formatSetDisplay(s: WorkoutSet, type: ExerciseType): string {
+  if (type === 'CARDIO') {
+    const parts: string[] = [];
+    if (s.durationSeconds) {
+      const m = Math.floor(s.durationSeconds / 60);
+      const sec = s.durationSeconds % 60;
+      parts.push(sec > 0 ? `${m}分${sec}秒` : `${m}分`);
+    }
+    if (s.distanceKm) parts.push(`${s.distanceKm}km`);
+    return parts.join('  ') || '—';
+  }
+  if (type === 'BODYWEIGHT') return `${s.reps}回`;
+  const w = s.weight % 1 === 0 ? String(s.weight) : s.weight.toFixed(1);
+  return `${w}kg × ${s.reps}回`;
+}
+
+// ── Timer ──────────────────────────────────────────────────────────────────────
 function useTimer(startTime: string | null): string {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -37,7 +59,7 @@ function useTimer(startTime: string | null): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// ── NumInput ─────────────────────────────────────────────────────────────────
+// ── NumInput (weight / reps) ────────────────────────────────────────────────
 function NumInput({
   label, value, unit, step, min, decimal, onChange,
 }: {
@@ -55,12 +77,6 @@ function NumInput({
     const next = Math.max(min, Math.round((value + delta) * 10) / 10);
     onChange(next);
   };
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    setInputVal(raw);
-    const num = decimal ? parseFloat(raw) : parseInt(raw, 10);
-    if (!isNaN(num) && num >= min) onChange(num);
-  };
 
   return (
     <div>
@@ -72,17 +88,23 @@ function NumInput({
         >
           −
         </button>
-        <div className="flex-1 flex items-baseline justify-center gap-1">
+        <div className="flex-1 flex items-baseline justify-center gap-1 min-w-0">
           <input
             ref={inputRef}
             type="text"
             inputMode={decimal ? 'decimal' : 'numeric'}
             value={inputVal}
-            onChange={handleChange}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setInputVal(raw);
+              const num = decimal ? parseFloat(raw) : parseInt(raw, 10);
+              if (!isNaN(num) && num >= min) onChange(num);
+            }}
             onBlur={() => setInputVal(fmt(value))}
-            className="w-20 text-5xl font-black text-[#111] text-center bg-transparent outline-none"
+            /* w-28 = 7rem = 112px — wide enough for "100.0" at 5xl */
+            className="w-28 text-5xl font-black text-[#111] text-center bg-transparent outline-none"
           />
-          <span className="text-[#AAAAAA] text-sm">{unit}</span>
+          <span className="text-[#AAAAAA] text-sm shrink-0">{unit}</span>
         </div>
         <button
           onClick={() => adjust(step)}
@@ -95,7 +117,75 @@ function NumInput({
   );
 }
 
-// ── Session content ───────────────────────────────────────────────────────────
+// ── Cardio Input ───────────────────────────────────────────────────────────────
+function CardioInput({
+  minutes, seconds, km,
+  onMinutes, onSeconds, onKm,
+}: {
+  minutes: number; seconds: number; km: number;
+  onMinutes: (v: number) => void; onSeconds: (v: number) => void; onKm: (v: number) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Time row */}
+      <div>
+        <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-2">時間</p>
+        <div className="flex gap-2">
+          <div className="flex items-center bg-white border border-[#EBEBEB] rounded-xl shadow-sm overflow-hidden flex-1">
+            <button onClick={() => onMinutes(Math.max(0, minutes - 1))}
+              className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">−</button>
+            <div className="flex-1 flex items-baseline justify-center gap-1">
+              <span className="text-4xl font-black text-[#111] tabular-nums">{String(minutes).padStart(2, '0')}</span>
+              <span className="text-[#AAAAAA] text-sm">分</span>
+            </div>
+            <button onClick={() => onMinutes(minutes + 1)}
+              className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">＋</button>
+          </div>
+          <div className="flex items-center bg-white border border-[#EBEBEB] rounded-xl shadow-sm overflow-hidden flex-1">
+            <button onClick={() => onSeconds(Math.max(0, seconds - 5))}
+              className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">−</button>
+            <div className="flex-1 flex items-baseline justify-center gap-1">
+              <span className="text-4xl font-black text-[#111] tabular-nums">{String(seconds).padStart(2, '0')}</span>
+              <span className="text-[#AAAAAA] text-sm">秒</span>
+            </div>
+            <button onClick={() => onSeconds(Math.min(55, seconds + 5))}
+              className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">＋</button>
+          </div>
+        </div>
+      </div>
+      {/* Distance (optional) */}
+      <div>
+        <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-2">距離（任意）</p>
+        <div className="flex items-center bg-white border border-[#EBEBEB] rounded-xl shadow-sm overflow-hidden">
+          <button onClick={() => onKm(Math.max(0, Math.round((km - 0.1) * 10) / 10))}
+            className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">−</button>
+          <div className="flex-1 flex items-baseline justify-center gap-1">
+            <span className="text-4xl font-black text-[#111] tabular-nums">
+              {km === 0 ? '—' : (km % 1 === 0 ? km : km.toFixed(1))}
+            </span>
+            <span className="text-[#AAAAAA] text-sm">km</span>
+          </div>
+          <button onClick={() => onKm(Math.round((km + 0.1) * 10) / 10)}
+            className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">＋</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Exercise type badge ────────────────────────────────────────────────────────
+const TYPE_LABEL: Record<ExerciseType, string> = {
+  WEIGHT: '重量',
+  BODYWEIGHT: '自重',
+  CARDIO: '有酸素',
+};
+const TYPE_COLOR: Record<ExerciseType, string> = {
+  WEIGHT: 'bg-blue-50 text-blue-500 border-blue-100',
+  BODYWEIGHT: 'bg-purple-50 text-purple-500 border-purple-100',
+  CARDIO: 'bg-orange-50 text-orange-500 border-orange-100',
+};
+
+// ── Main session content ───────────────────────────────────────────────────────
 function SessionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,8 +204,12 @@ function SessionContent() {
 
   // Recording state
   const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
+  const [exerciseType, setExerciseType] = useState<ExerciseType>('WEIGHT');
   const [weight, setWeight] = useState(0);
   const [reps, setReps] = useState(10);
+  const [cardioMins, setCardioMins] = useState(20);
+  const [cardioSecs, setCardioSecs] = useState(0);
+  const [cardioKm, setCardioKm] = useState(0);
   const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([]);
   const [memo, setMemo] = useState('');
   const [pbNotice, setPBNotice] = useState<{ text: string; type: 'warn' | 'ok' } | null>(null);
@@ -133,76 +227,74 @@ function SessionContent() {
   const [completedExercises, setCompletedExercises] = useState<ExerciseRecord[]>([]);
   const [todaySetCount, setTodaySetCount] = useState(0);
 
-  // Load exercises when body part changes
-  useEffect(() => {
-    setHistoryExercises(getExercisesByBodyPart(currentBodyPart));
-  }, [currentBodyPart]);
+  useEffect(() => { setHistoryExercises(getExercisesByBodyPart(currentBodyPart)); }, [currentBodyPart]);
+  useEffect(() => { setTodaySetCount(getTodaySavedSets()); }, []);
+  useEffect(() => { if (!getCurrentSession()) router.replace('/'); }, [router]);
 
-  // Init today's sets
-  useEffect(() => {
-    setTodaySetCount(getTodaySavedSets());
-  }, []);
-
-  // Redirect if no session
-  useEffect(() => {
-    if (!getCurrentSession()) router.replace('/');
-  }, [router]);
-
-  // Load last record when exercise changes
   useEffect(() => {
     if (!currentExercise) return;
     const last = getLastExerciseRecord(currentExercise.id);
     setLastRecord(last);
-    if (last?.sets.length) {
-      const bestSet = last.sets.reduce((best, s) =>
-        calculateEstimated1RM(s.weight, s.reps) > calculateEstimated1RM(best.weight, best.reps) ? s : best
+    if (last?.sets.length && exerciseType === 'WEIGHT') {
+      const best = last.sets.reduce((b, s) =>
+        calculateEstimated1RM(s.weight, s.reps) > calculateEstimated1RM(b.weight, b.reps) ? s : b
       );
-      setWeight(bestSet.weight);
-      setReps(bestSet.reps);
+      setWeight(best.weight);
+      setReps(best.reps);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentExercise]);
 
-  // Real-time PB detection
   useEffect(() => {
-    if (!currentExercise) return;
+    if (!currentExercise || exerciseType !== 'WEIGHT') { setPBNotice(null); return; }
     const pb = getPersonalBest(currentExercise.id);
     if (!pb) { setPBNotice(null); return; }
-    const c1RM = calculateEstimated1RM(weight, reps);
-    if (c1RM > pb.estimated1RM) {
+    const c = calculateEstimated1RM(weight, reps);
+    if (c > pb.estimated1RM)
       setPBNotice({ text: weight > pb.weight ? '重量更新！' : '自己ベスト更新！', type: 'ok' });
-    } else if (calculateEstimated1RM(weight, reps + 1) > pb.estimated1RM) {
+    else if (calculateEstimated1RM(weight, reps + 1) > pb.estimated1RM)
       setPBNotice({ text: 'あと1回で自己ベスト更新', type: 'warn' });
-    } else {
-      setPBNotice(null);
-    }
-  }, [weight, reps, currentExercise]);
+    else setPBNotice(null);
+  }, [weight, reps, currentExercise, exerciseType]);
 
   /* ── Actions ── */
-
   const selectExercise = (ex: Exercise) => {
     setCurrentExercise(ex);
-    setCurrentSets([]);
-    setMemo('');
-    setEditIndex(null);
+    const t = ex.exerciseType || classifyExercise(ex.name);
+    setExerciseType(t);
+    setCurrentSets([]); setMemo(''); setEditIndex(null);
     setPhase('recording');
   };
 
   const startNewExercise = (name: string) => {
     if (!name.trim()) return;
-    const ex = addOrUpdateExercise(name.trim(), currentBodyPart);
+    const t = classifyExercise(name);
+    setExerciseType(t);
+    const ex = addOrUpdateExercise(name.trim(), currentBodyPart, t);
     setHistoryExercises(getExercisesByBodyPart(currentBodyPart));
     setCurrentExercise(ex);
-    setCurrentSets([]);
-    setMemo('');
-    setEditIndex(null);
-    setInputValue('');
+    setCurrentSets([]); setMemo(''); setEditIndex(null); setInputValue('');
     setPhase('recording');
   };
 
   const handleSetComplete = () => {
-    setCurrentSets((prev) => [...prev, { weight, reps }]);
+    let newSet: WorkoutSet;
+    if (exerciseType === 'CARDIO') {
+      newSet = {
+        weight: 0, reps: 0,
+        durationSeconds: cardioMins * 60 + cardioSecs,
+        distanceKm: cardioKm > 0 ? cardioKm : undefined,
+      };
+    } else if (exerciseType === 'BODYWEIGHT') {
+      newSet = { weight: 0, reps };
+    } else {
+      newSet = { weight, reps };
+    }
+    setCurrentSets((prev) => [...prev, newSet]);
     setTodaySetCount((prev) => prev + 1);
-    if (currentExercise) updatePersonalBest(currentExercise.id, currentExercise.name, weight, reps);
+    if (currentExercise && exerciseType === 'WEIGHT') {
+      updatePersonalBest(currentExercise.id, currentExercise.name, weight, reps);
+    }
   };
 
   const startEditSet = (i: number) => {
@@ -213,10 +305,10 @@ function SessionContent() {
 
   const saveEditSet = (i: number) => {
     setCurrentSets((prev) =>
-      prev.map((s, idx) => (idx === i ? { weight: editWeight, reps: editReps } : s))
+      prev.map((s, idx) => idx === i ? { ...s, weight: editWeight, reps: editReps } : s)
     );
     setEditIndex(null);
-    if (currentExercise) {
+    if (currentExercise && exerciseType === 'WEIGHT') {
       updatePersonalBest(currentExercise.id, currentExercise.name, editWeight, editReps);
     }
   };
@@ -229,14 +321,15 @@ function SessionContent() {
 
   const saveCurrentExercise = (): ExerciseRecord | null => {
     if (!currentExercise || currentSets.length === 0) return null;
-    const pb = getPersonalBest(currentExercise.id);
+    const pb = exerciseType === 'WEIGHT' ? getPersonalBest(currentExercise.id) : null;
     const hasPB = pb
       ? currentSets.some((s) => calculateEstimated1RM(s.weight, s.reps) >= pb.estimated1RM)
-      : true;
+      : false;
     return {
       exerciseId: currentExercise.id,
       exerciseName: currentExercise.name,
       bodyPart: currentBodyPart,
+      exerciseType,
       sets: currentSets,
       isNewPB: hasPB,
       memo: memo.trim() || undefined,
@@ -249,53 +342,39 @@ function SessionContent() {
     setCompletedExercises(updated);
     const sess = getCurrentSession();
     if (sess && record) { sess.exercises = updated; setCurrentSession(sess); }
-    setCurrentExercise(null);
-    setCurrentSets([]);
-    setMemo('');
-    setEditIndex(null);
-    setPBNotice(null);
-    setInputValue('');
+    setCurrentExercise(null); setCurrentSets([]); setMemo('');
+    setEditIndex(null); setPBNotice(null); setInputValue('');
     setHistoryExercises(getExercisesByBodyPart(currentBodyPart));
     setPhase('selecting');
   };
 
   const finishTraining = () => {
     const record = saveCurrentExercise();
-    const allExercises = record ? [...completedExercises, record] : completedExercises;
+    const all = record ? [...completedExercises, record] : completedExercises;
     const sess = getCurrentSession();
     const duration = sess
-      ? Math.floor((Date.now() - new Date(sess.startTime).getTime()) / 1000)
-      : 0;
+      ? Math.floor((Date.now() - new Date(sess.startTime).getTime()) / 1000) : 0;
     if (sess) {
-      saveSession({
-        id: sess.id,
-        date: new Date().toISOString(),
-        bodyPart: initBodyPart,
-        exercises: allExercises,
-        durationSeconds: duration,
-      });
+      saveSession({ id: sess.id, date: new Date().toISOString(), bodyPart: initBodyPart, exercises: all, durationSeconds: duration });
       setCurrentSession(null);
     }
-    const totalSets = allExercises.reduce((t, e) => t + e.sets.length, 0);
-    router.push(`/complete?sets=${totalSets}&duration=${duration}`);
+    const total = all.reduce((t, e) => t + e.sets.length, 0);
+    router.push(`/complete?sets=${total}&duration=${duration}`);
   };
 
   const lastMax = lastRecord?.sets.length
-    ? lastRecord.sets.reduce((best, s) =>
-        calculateEstimated1RM(s.weight, s.reps) > calculateEstimated1RM(best.weight, best.reps) ? s : best
-      )
+    ? lastRecord.sets.reduce((b, s) =>
+        calculateEstimated1RM(s.weight, s.reps) > calculateEstimated1RM(b.weight, b.reps) ? s : b)
     : null;
 
-  /* ── Render ── */
+  /* ── RENDER ── */
   return (
     <div className="min-h-screen bg-[#F7F7F7] text-[#111] max-w-[430px] mx-auto">
 
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-white border-b border-[#EBEBEB] px-6 py-4 flex items-center justify-between shadow-sm">
-        <button
-          onClick={() => router.replace('/')}
-          className="flex items-center gap-2 text-[#BBBBBB] active:text-[#111] transition-colors text-sm"
-        >
+        <button onClick={() => router.replace('/')}
+          className="flex items-center gap-2 text-[#BBBBBB] active:text-[#111] transition-colors text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M10 3L5 8l5 5" />
           </svg>
@@ -328,24 +407,20 @@ function SessionContent() {
         </div>
       )}
 
-      {/* ═══════════ SELECTING PHASE ═══════════ */}
+      {/* ═══ SELECTING ═══ */}
       {phase === 'selecting' && (
         <div className="px-6 pt-5 pb-32 animate-fadeInUp">
-
-          {/* Body part selector */}
+          {/* Body part chips */}
           <div className="mb-6">
             <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">部位</p>
             <div className="flex flex-wrap gap-2">
               {ALL_BODY_PARTS.map((bp) => (
-                <button
-                  key={bp}
-                  onClick={() => setCurrentBodyPart(bp)}
+                <button key={bp} onClick={() => setCurrentBodyPart(bp)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                     currentBodyPart === bp
                       ? 'bg-[#00DD77] text-black shadow-sm'
                       : 'bg-white border border-[#E8E8E8] text-[#777] active:bg-[#F0F0F0]'
-                  }`}
-                >
+                  }`}>
                   {BODY_PART_LABELS[bp]}
                 </button>
               ))}
@@ -354,88 +429,82 @@ function SessionContent() {
 
           <h2 className="text-2xl font-black text-[#111] mb-5">種目を選ぶ</h2>
 
-          {/* Past exercises */}
           {historyExercises.length > 0 && (
             <div className="mb-6">
               <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">過去の種目</p>
               <div className="flex flex-col gap-2">
                 {historyExercises.map((ex) => (
-                  <button
-                    key={ex.id}
-                    onClick={() => selectExercise(ex)}
-                    className="bg-white border border-[#EBEBEB] rounded-xl px-4 py-4 flex items-center justify-between active:bg-[#F5F5F5] transition-colors shadow-sm"
-                  >
+                  <button key={ex.id} onClick={() => selectExercise(ex)}
+                    className="bg-white border border-[#EBEBEB] rounded-xl px-4 py-3.5 flex items-center justify-between active:bg-[#F5F5F5] transition-colors shadow-sm">
                     <span className="font-bold text-[#111]">{ex.name}</span>
-                    <span className="text-[#CCCCCC] text-xs">{ex.usageCount}回使用</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${TYPE_COLOR[ex.exerciseType || 'WEIGHT']}`}>
+                        {TYPE_LABEL[ex.exerciseType || 'WEIGHT']}
+                      </span>
+                      <span className="text-[#CCCCCC] text-xs">{ex.usageCount}回</span>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* New exercise input */}
           <div>
             <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">
               {historyExercises.length > 0 ? '新しく入力' : '種目名を入力'}
             </p>
             <input
-              type="text"
-              value={inputValue}
+              type="text" value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && startNewExercise(inputValue)}
-              placeholder="例：ベンチプレス"
+              placeholder="例：ベンチプレス / ランニング"
               className="w-full bg-white border border-[#EBEBEB] text-[#111] text-lg px-4 py-4 rounded-xl outline-none focus:border-[#00DD77] placeholder-[#CCCCCC] mb-3 shadow-sm transition-colors"
             />
-            <button
-              onClick={() => startNewExercise(inputValue)}
-              disabled={!inputValue.trim()}
-              className="w-full py-4 rounded-xl bg-[#00DD77] text-black font-black text-base active:scale-[0.97] transition-transform disabled:opacity-30 disabled:active:scale-100"
-            >
+            <button onClick={() => startNewExercise(inputValue)} disabled={!inputValue.trim()}
+              className="w-full py-4 rounded-xl bg-[#00DD77] text-black font-black text-base active:scale-[0.97] transition-transform disabled:opacity-30 disabled:active:scale-100">
               この種目で記録開始
             </button>
           </div>
 
           {completedExercises.length > 0 && (
-            <button
-              onClick={finishTraining}
-              className="w-full mt-4 py-4 rounded-xl border border-[#E8E8E8] bg-white text-[#777] font-bold text-base active:text-[#111] transition-colors shadow-sm"
-            >
+            <button onClick={finishTraining}
+              className="w-full mt-4 py-4 rounded-xl border border-[#E8E8E8] bg-white text-[#777] font-bold text-base active:text-[#111] transition-colors shadow-sm">
               トレーニングを終了する
             </button>
           )}
         </div>
       )}
 
-      {/* ═══════════ RECORDING PHASE ═══════════ */}
+      {/* ═══ RECORDING ═══ */}
       {phase === 'recording' && currentExercise && (
         <div className="px-6 pt-5 pb-44 animate-fadeInUp">
 
-          {/* Exercise name + tag + chart button */}
+          {/* Exercise name header */}
           <div className="flex items-center gap-2 mb-5">
             <h2 className="text-2xl font-black text-[#111] flex-1 leading-tight">
               {currentExercise.name}
             </h2>
+            <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded shrink-0 ${TYPE_COLOR[exerciseType]}`}>
+              {TYPE_LABEL[exerciseType]}
+            </span>
             <span className="text-xs text-[#888] bg-white border border-[#EBEBEB] px-2 py-1 rounded-full shadow-sm shrink-0">
               {BODY_PART_LABELS[currentBodyPart]}
             </span>
-            <button
-              onClick={() => setShowChart(true)}
-              title="成長グラフ"
-              className="w-9 h-9 flex items-center justify-center rounded-full border border-[#EBEBEB] bg-white text-[#888] active:bg-[#F0F0F0] transition-colors shadow-sm shrink-0"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="1,11 4,7 7,9 10,4 13,6" />
-              </svg>
-            </button>
+            {exerciseType === 'WEIGHT' && (
+              <button onClick={() => setShowChart(true)} title="成長グラフ"
+                className="w-9 h-9 flex items-center justify-center rounded-full border border-[#EBEBEB] bg-white text-[#888] active:bg-[#F0F0F0] transition-colors shadow-sm shrink-0">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1,11 4,7 7,9 10,4 13,6" />
+                </svg>
+              </button>
+            )}
           </div>
 
-          {/* Previous MAX */}
-          {lastMax && (
+          {/* Previous MAX (WEIGHT only) */}
+          {lastMax && exerciseType === 'WEIGHT' && (
             <div className="bg-white border border-[#EBEBEB] rounded-2xl p-4 mb-4 shadow-sm">
               <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">
-                前回MAX（{new Date(lastRecord!.date).toLocaleDateString('ja-JP', {
-                  month: 'numeric', day: 'numeric',
-                })}）
+                前回MAX（{new Date(lastRecord!.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}）
               </p>
               <div className="flex items-baseline gap-1 flex-wrap">
                 <span className="text-3xl font-black text-[#3B82F6]">
@@ -463,135 +532,98 @@ function SessionContent() {
             </div>
           )}
 
-          {/* Weight & reps inputs */}
+          {/* ── Input by exercise type ── */}
           <div className="flex flex-col gap-3 mb-5">
-            <NumInput label="重量" value={weight} unit="kg" step={2.5} min={0} decimal onChange={setWeight} />
-            <NumInput label="回数" value={reps} unit="回" step={1} min={1} onChange={setReps} />
+            {exerciseType === 'WEIGHT' && (
+              <>
+                <NumInput label="重量" value={weight} unit="kg" step={2.5} min={0} decimal onChange={setWeight} />
+                <NumInput label="回数" value={reps} unit="回" step={1} min={1} onChange={setReps} />
+              </>
+            )}
+            {exerciseType === 'BODYWEIGHT' && (
+              <NumInput label="回数" value={reps} unit="回" step={1} min={1} onChange={setReps} />
+            )}
+            {exerciseType === 'CARDIO' && (
+              <CardioInput
+                minutes={cardioMins} seconds={cardioSecs} km={cardioKm}
+                onMinutes={setCardioMins} onSeconds={setCardioSecs} onKm={setCardioKm}
+              />
+            )}
           </div>
 
-          {/* セット完了 */}
-          <button
-            onClick={handleSetComplete}
-            className="w-full py-4 rounded-xl bg-[#00DD77] text-black font-black text-base active:scale-[0.97] transition-transform mb-5 shadow-sm"
-          >
-            セット完了
+          {/* Complete button */}
+          <button onClick={handleSetComplete}
+            className="w-full py-4 rounded-xl bg-[#00DD77] text-black font-black text-base active:scale-[0.97] transition-transform mb-5 shadow-sm">
+            {exerciseType === 'CARDIO' ? '記録する' : 'セット完了'}
           </button>
 
           {/* Sets list */}
           {currentSets.length > 0 && (
             <div className="mb-5">
               <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">
-                このメニューのセット
+                このメニューの記録
               </p>
               <div className="flex flex-col gap-2">
                 {currentSets.map((s, i) =>
-                  editIndex === i ? (
-                    /* ── Inline edit ── */
-                    <div
-                      key={i}
-                      className="bg-white border border-[#00DD77]/40 rounded-xl p-4 shadow-sm animate-scaleIn"
-                    >
-                      <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-3">
-                        Set {i + 1} を編集
-                      </p>
+                  editIndex === i && exerciseType === 'WEIGHT' ? (
+                    /* Inline edit (WEIGHT only) */
+                    <div key={i} className="bg-white border border-[#00DD77]/40 rounded-xl p-4 shadow-sm animate-scaleIn">
+                      <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-3">Set {i + 1} を編集</p>
                       <div className="flex gap-3 mb-3">
-                        {/* Edit weight */}
                         <div className="flex-1">
                           <p className="text-[10px] text-[#BBBBBB] mb-1.5">重量 (kg)</p>
                           <div className="flex items-center bg-[#F7F7F7] border border-[#E5E5E5] rounded-lg overflow-hidden">
-                            <button
-                              onClick={() => setEditWeight((w) => Math.max(0, Math.round((w - 2.5) * 10) / 10))}
-                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors"
-                            >
-                              −
-                            </button>
-                            <input
-                              type="text"
-                              inputMode="decimal"
+                            <button onClick={() => setEditWeight((w) => Math.max(0, Math.round((w - 2.5) * 10) / 10))}
+                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors">−</button>
+                            <input type="text" inputMode="decimal"
                               value={editWeight % 1 === 0 ? String(editWeight) : editWeight.toFixed(1)}
-                              onChange={(e) => {
-                                const n = parseFloat(e.target.value);
-                                if (!isNaN(n) && n >= 0) setEditWeight(n);
-                              }}
-                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#111]"
-                            />
-                            <button
-                              onClick={() => setEditWeight((w) => Math.round((w + 2.5) * 10) / 10)}
-                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors"
-                            >
-                              ＋
-                            </button>
+                              onChange={(e) => { const n = parseFloat(e.target.value); if (!isNaN(n) && n >= 0) setEditWeight(n); }}
+                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#111]" />
+                            <button onClick={() => setEditWeight((w) => Math.round((w + 2.5) * 10) / 10)}
+                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors">＋</button>
                           </div>
                         </div>
-                        {/* Edit reps */}
                         <div className="flex-1">
                           <p className="text-[10px] text-[#BBBBBB] mb-1.5">回数</p>
                           <div className="flex items-center bg-[#F7F7F7] border border-[#E5E5E5] rounded-lg overflow-hidden">
-                            <button
-                              onClick={() => setEditReps((r) => Math.max(1, r - 1))}
-                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors"
-                            >
-                              −
-                            </button>
-                            <input
-                              type="text"
-                              inputMode="numeric"
+                            <button onClick={() => setEditReps((r) => Math.max(1, r - 1))}
+                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors">−</button>
+                            <input type="text" inputMode="numeric"
                               value={String(editReps)}
-                              onChange={(e) => {
-                                const n = parseInt(e.target.value, 10);
-                                if (!isNaN(n) && n > 0) setEditReps(n);
-                              }}
-                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#111]"
-                            />
-                            <button
-                              onClick={() => setEditReps((r) => r + 1)}
-                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors"
-                            >
-                              ＋
-                            </button>
+                              onChange={(e) => { const n = parseInt(e.target.value, 10); if (!isNaN(n) && n > 0) setEditReps(n); }}
+                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#111]" />
+                            <button onClick={() => setEditReps((r) => r + 1)}
+                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors">＋</button>
                           </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => saveEditSet(i)}
-                          className="flex-1 py-2.5 rounded-lg bg-[#00DD77] text-black font-bold text-sm active:scale-[0.97] transition-transform"
-                        >
-                          保存
-                        </button>
-                        <button
-                          onClick={() => setEditIndex(null)}
-                          className="flex-1 py-2.5 rounded-lg border border-[#EBEBEB] text-[#777] font-bold text-sm active:bg-[#F5F5F5] transition-colors"
-                        >
-                          キャンセル
-                        </button>
+                        <button onClick={() => saveEditSet(i)}
+                          className="flex-1 py-2.5 rounded-lg bg-[#00DD77] text-black font-bold text-sm active:scale-[0.97] transition-transform">保存</button>
+                        <button onClick={() => setEditIndex(null)}
+                          className="flex-1 py-2.5 rounded-lg border border-[#EBEBEB] text-[#777] font-bold text-sm active:bg-[#F5F5F5] transition-colors">キャンセル</button>
                       </div>
                     </div>
                   ) : (
-                    /* ── Normal row ── */
-                    <div
-                      key={i}
-                      className="bg-white border border-[#EBEBEB] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm"
-                    >
+                    /* Normal row */
+                    <div key={i} className="bg-white border border-[#EBEBEB] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
                       <span className="text-[#BBBBBB] text-sm font-medium w-12 shrink-0">
-                        Set {i + 1}
+                        {exerciseType === 'CARDIO' ? `#${i + 1}` : `Set ${i + 1}`}
                       </span>
-                      <span className="font-bold text-[#111] flex-1">
-                        {s.weight % 1 === 0 ? s.weight : s.weight.toFixed(1)}kg × {s.reps}回
+                      <span className="font-bold text-[#111] flex-1 text-sm">
+                        {formatSetDisplay(s, exerciseType)}
                       </span>
                       <div className="flex gap-1.5">
-                        <button
-                          onClick={() => startEditSet(i)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#F5F5F5] border border-[#E8E8E8] text-[#888] active:bg-[#EBEBEB] transition-colors"
-                        >
-                          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => deleteSet(i)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 border border-red-100 text-red-400 active:bg-red-100 transition-colors"
-                        >
+                        {exerciseType === 'WEIGHT' && (
+                          <button onClick={() => startEditSet(i)}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#F5F5F5] border border-[#E8E8E8] text-[#888] active:bg-[#EBEBEB] transition-colors">
+                            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z" />
+                            </svg>
+                          </button>
+                        )}
+                        <button onClick={() => deleteSet(i)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 border border-red-100 text-red-400 active:bg-red-100 transition-colors">
                           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                             <path d="M2 2l8 8M10 2l-8 8" />
                           </svg>
@@ -604,12 +636,11 @@ function SessionContent() {
             </div>
           )}
 
-          {/* Memo field */}
+          {/* Memo */}
           <div className="mb-5">
             <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">メモ（任意）</p>
             <textarea
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
+              value={memo} onChange={(e) => setMemo(e.target.value)}
               placeholder="気づいたこと・体調・フォームのポイントなど…"
               rows={3}
               className="w-full bg-white border border-[#EBEBEB] text-[#111] text-sm px-4 py-3 rounded-xl outline-none focus:border-[#00DD77] placeholder-[#CCCCCC] resize-none shadow-sm transition-colors"
@@ -618,27 +649,23 @@ function SessionContent() {
         </div>
       )}
 
-      {/* Bottom action bar (recording phase) */}
+      {/* Bottom bar (recording phase) */}
       {phase === 'recording' && (
         <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto px-6 pb-10 pt-5 bg-gradient-to-t from-white via-white/95 to-transparent">
           <div className="flex gap-3">
-            <button
-              onClick={goToNextMenu}
-              className="flex-1 py-4 rounded-xl bg-[#111] text-white font-bold text-base active:scale-[0.97] transition-transform"
-            >
+            <button onClick={goToNextMenu}
+              className="flex-1 py-4 rounded-xl bg-[#111] text-white font-bold text-base active:scale-[0.97] transition-transform">
               次のメニュー
             </button>
-            <button
-              onClick={finishTraining}
-              className="flex-1 py-4 rounded-xl border border-[#E8E8E8] bg-white text-[#777] font-bold text-base active:text-[#111] transition-colors shadow-sm"
-            >
+            <button onClick={finishTraining}
+              className="flex-1 py-4 rounded-xl border border-[#E8E8E8] bg-white text-[#777] font-bold text-base active:text-[#111] transition-colors shadow-sm">
               終了
             </button>
           </div>
         </div>
       )}
 
-      {/* Progress Chart Modal */}
+      {/* Progress chart modal */}
       {showChart && currentExercise && (
         <ExerciseProgressChart
           exerciseId={currentExercise.id}

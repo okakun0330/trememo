@@ -20,15 +20,21 @@ export const BODY_PART_EN: Record<BodyPart, string> = {
   cardio: 'CARDIO',
 };
 
+/** 種目タイプ：重量×回数 / 自重×回数 / 有酸素（時間・距離） */
+export type ExerciseType = 'WEIGHT' | 'BODYWEIGHT' | 'CARDIO';
+
 export type WorkoutSet = {
-  weight: number;
-  reps: number;
+  weight: number;            // WEIGHT: kg  /  BODYWEIGHT: 0  /  CARDIO: 0
+  reps: number;              // WEIGHT・BODYWEIGHT: 回数  /  CARDIO: 0
+  durationSeconds?: number;  // CARDIO: 秒数
+  distanceKm?: number;       // CARDIO: km（任意）
 };
 
 export type Exercise = {
   id: string;
   name: string;
   bodyPart: BodyPart;
+  exerciseType?: ExerciseType; // 旧データ互換のためオプショナル
   usageCount: number;
   lastUsed: string;
 };
@@ -37,6 +43,7 @@ export type ExerciseRecord = {
   exerciseId: string;
   exerciseName: string;
   bodyPart: BodyPart;
+  exerciseType?: ExerciseType; // 旧データ互換のためオプショナル
   sets: WorkoutSet[];
   isNewPB: boolean;
   memo?: string;
