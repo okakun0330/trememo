@@ -15,22 +15,21 @@ import {
   getTodaySavedSets,
 } from '@/lib/storage';
 import { BODY_PART_LABELS, BodyPart, Exercise, ExerciseRecord, WorkoutSet } from '@/lib/types';
+import ExerciseProgressChart from '../components/ExerciseProgressChart';
 
-// ── Timer display ─────────────────────────────────────────────────────────────
+const ALL_BODY_PARTS: BodyPart[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'abs', 'cardio'];
 
+// ── Timer ─────────────────────────────────────────────────────────────────────
 function useTimer(startTime: string | null): string {
   const [elapsed, setElapsed] = useState(0);
-
   useEffect(() => {
     if (!startTime) return;
-    const tick = () => {
+    const tick = () =>
       setElapsed(Math.floor((Date.now() - new Date(startTime).getTime()) / 1000));
-    };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [startTime]);
-
   const h = Math.floor(elapsed / 3600);
   const m = Math.floor((elapsed % 3600) / 60);
   const s = elapsed % 60;
@@ -38,40 +37,24 @@ function useTimer(startTime: string | null): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// ── Number input with +/- and direct entry ────────────────────────────────────
-
+// ── NumInput ─────────────────────────────────────────────────────────────────
 function NumInput({
-  label,
-  value,
-  unit,
-  step,
-  min,
-  decimal,
-  onChange,
+  label, value, unit, step, min, decimal, onChange,
 }: {
-  label: string;
-  value: number;
-  unit: string;
-  step: number;
-  min: number;
-  decimal?: boolean;
-  onChange: (v: number) => void;
+  label: string; value: number; unit: string; step: number;
+  min: number; decimal?: boolean; onChange: (v: number) => void;
 }) {
   const fmt = (n: number) => (decimal && n % 1 !== 0 ? n.toFixed(1) : String(n));
   const [inputVal, setInputVal] = useState(fmt(value));
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // sync when value changes from outside (adjuster buttons)
-  useEffect(() => {
-    setInputVal(fmt(value));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setInputVal(fmt(value)); }, [value]);
 
   const adjust = (delta: number) => {
     const next = Math.max(min, Math.round((value + delta) * 10) / 10);
     onChange(next);
   };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     setInputVal(raw);
@@ -79,17 +62,13 @@ function NumInput({
     if (!isNaN(num) && num >= min) onChange(num);
   };
 
-  const handleBlur = () => {
-    setInputVal(fmt(value));
-  };
-
   return (
     <div>
-      <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">{label}</p>
-      <div className="flex items-center gap-2 bg-[#111] border border-[#1F1F1F] rounded-2xl px-3 py-2">
+      <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-2">{label}</p>
+      <div className="flex items-center gap-2 bg-white border border-[#EBEBEB] rounded-2xl px-3 py-2 shadow-sm">
         <button
           onClick={() => adjust(-step)}
-          className="w-12 h-12 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] text-white text-2xl font-black flex items-center justify-center active:bg-[#252525] transition-colors shrink-0"
+          className="w-12 h-12 rounded-xl bg-[#F5F5F5] border border-[#E5E5E5] text-[#111] text-2xl font-black flex items-center justify-center active:bg-[#EBEBEB] transition-colors shrink-0"
         >
           −
         </button>
@@ -100,14 +79,14 @@ function NumInput({
             inputMode={decimal ? 'decimal' : 'numeric'}
             value={inputVal}
             onChange={handleChange}
-            onBlur={handleBlur}
-            className="w-20 text-5xl font-black text-white text-center bg-transparent outline-none"
+            onBlur={() => setInputVal(fmt(value))}
+            className="w-20 text-5xl font-black text-[#111] text-center bg-transparent outline-none"
           />
-          <span className="text-[#444] text-sm">{unit}</span>
+          <span className="text-[#AAAAAA] text-sm">{unit}</span>
         </div>
         <button
           onClick={() => adjust(step)}
-          className="w-12 h-12 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] text-white text-2xl font-black flex items-center justify-center active:bg-[#252525] transition-colors shrink-0"
+          className="w-12 h-12 rounded-xl bg-[#F5F5F5] border border-[#E5E5E5] text-[#111] text-2xl font-black flex items-center justify-center active:bg-[#EBEBEB] transition-colors shrink-0"
         >
           ＋
         </button>
@@ -116,20 +95,20 @@ function NumInput({
   );
 }
 
-// ── Main session content ──────────────────────────────────────────────────────
-
+// ── Session content ───────────────────────────────────────────────────────────
 function SessionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const bodyPart = (searchParams.get('bodyPart') as BodyPart) || 'chest';
+  const initBodyPart = (searchParams.get('bodyPart') as BodyPart) || 'chest';
 
   const session = getCurrentSession();
   const timer = useTimer(session?.startTime ?? null);
 
   type Phase = 'selecting' | 'recording';
   const [phase, setPhase] = useState<Phase>('selecting');
+  const [currentBodyPart, setCurrentBodyPart] = useState<BodyPart>(initBodyPart);
 
-  // Exercise selection state
+  // Exercise selection
   const [historyExercises, setHistoryExercises] = useState<Exercise[]>([]);
   const [inputValue, setInputValue] = useState('');
 
@@ -138,27 +117,38 @@ function SessionContent() {
   const [weight, setWeight] = useState(0);
   const [reps, setReps] = useState(10);
   const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([]);
+  const [memo, setMemo] = useState('');
   const [pbNotice, setPBNotice] = useState<{ text: string; type: 'warn' | 'ok' } | null>(null);
   const [lastRecord, setLastRecord] = useState<{ sets: WorkoutSet[]; date: string } | null>(null);
 
-  // Completed exercises across the whole session
-  const [completedExercises, setCompletedExercises] = useState<ExerciseRecord[]>([]);
+  // Set edit
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editWeight, setEditWeight] = useState(0);
+  const [editReps, setEditReps] = useState(0);
 
-  // Today's total sets (saved + current session)
+  // Progress chart
+  const [showChart, setShowChart] = useState(false);
+
+  // Session-level
+  const [completedExercises, setCompletedExercises] = useState<ExerciseRecord[]>([]);
   const [todaySetCount, setTodaySetCount] = useState(0);
 
+  // Load exercises when body part changes
   useEffect(() => {
-    const saved = getTodaySavedSets();
-    setTodaySetCount(saved);
-    setHistoryExercises(getExercisesByBodyPart(bodyPart));
-  }, [bodyPart]);
+    setHistoryExercises(getExercisesByBodyPart(currentBodyPart));
+  }, [currentBodyPart]);
 
-  // Redirect if no session started
+  // Init today's sets
+  useEffect(() => {
+    setTodaySetCount(getTodaySavedSets());
+  }, []);
+
+  // Redirect if no session
   useEffect(() => {
     if (!getCurrentSession()) router.replace('/');
   }, [router]);
 
-  // Load last record & PB when exercise changes
+  // Load last record when exercise changes
   useEffect(() => {
     if (!currentExercise) return;
     const last = getLastExerciseRecord(currentExercise.id);
@@ -176,10 +166,10 @@ function SessionContent() {
   useEffect(() => {
     if (!currentExercise) return;
     const pb = getPersonalBest(currentExercise.id);
-    if (!pb) return;
-    const current1RM = calculateEstimated1RM(weight, reps);
-    if (current1RM > pb.estimated1RM) {
-      setPBNotice({ text: weight > pb.weight ? '重量更新' : '自己ベスト更新', type: 'ok' });
+    if (!pb) { setPBNotice(null); return; }
+    const c1RM = calculateEstimated1RM(weight, reps);
+    if (c1RM > pb.estimated1RM) {
+      setPBNotice({ text: weight > pb.weight ? '重量更新！' : '自己ベスト更新！', type: 'ok' });
     } else if (calculateEstimated1RM(weight, reps + 1) > pb.estimated1RM) {
       setPBNotice({ text: 'あと1回で自己ベスト更新', type: 'warn' });
     } else {
@@ -187,85 +177,107 @@ function SessionContent() {
     }
   }, [weight, reps, currentExercise]);
 
+  /* ── Actions ── */
+
   const selectExercise = (ex: Exercise) => {
     setCurrentExercise(ex);
     setCurrentSets([]);
+    setMemo('');
+    setEditIndex(null);
     setPhase('recording');
   };
 
   const startNewExercise = (name: string) => {
     if (!name.trim()) return;
-    const ex = addOrUpdateExercise(name.trim(), bodyPart);
-    setHistoryExercises(getExercisesByBodyPart(bodyPart));
+    const ex = addOrUpdateExercise(name.trim(), currentBodyPart);
+    setHistoryExercises(getExercisesByBodyPart(currentBodyPart));
     setCurrentExercise(ex);
     setCurrentSets([]);
+    setMemo('');
+    setEditIndex(null);
     setInputValue('');
     setPhase('recording');
   };
 
   const handleSetComplete = () => {
-    const newSet: WorkoutSet = { weight, reps };
-    setCurrentSets((prev) => [...prev, newSet]);
+    setCurrentSets((prev) => [...prev, { weight, reps }]);
     setTodaySetCount((prev) => prev + 1);
+    if (currentExercise) updatePersonalBest(currentExercise.id, currentExercise.name, weight, reps);
+  };
 
+  const startEditSet = (i: number) => {
+    setEditIndex(i);
+    setEditWeight(currentSets[i].weight);
+    setEditReps(currentSets[i].reps);
+  };
+
+  const saveEditSet = (i: number) => {
+    setCurrentSets((prev) =>
+      prev.map((s, idx) => (idx === i ? { weight: editWeight, reps: editReps } : s))
+    );
+    setEditIndex(null);
     if (currentExercise) {
-      updatePersonalBest(currentExercise.id, currentExercise.name, weight, reps);
+      updatePersonalBest(currentExercise.id, currentExercise.name, editWeight, editReps);
     }
+  };
+
+  const deleteSet = (i: number) => {
+    setCurrentSets((prev) => prev.filter((_, idx) => idx !== i));
+    setTodaySetCount((prev) => Math.max(0, prev - 1));
+    if (editIndex === i) setEditIndex(null);
   };
 
   const saveCurrentExercise = (): ExerciseRecord | null => {
     if (!currentExercise || currentSets.length === 0) return null;
-    const hasPB = currentSets.some(
-      (s) => getPersonalBest(currentExercise.id)?.estimated1RM === calculateEstimated1RM(s.weight, s.reps)
-    );
-    const record: ExerciseRecord = {
+    const pb = getPersonalBest(currentExercise.id);
+    const hasPB = pb
+      ? currentSets.some((s) => calculateEstimated1RM(s.weight, s.reps) >= pb.estimated1RM)
+      : true;
+    return {
       exerciseId: currentExercise.id,
       exerciseName: currentExercise.name,
-      bodyPart,
+      bodyPart: currentBodyPart,
       sets: currentSets,
       isNewPB: hasPB,
+      memo: memo.trim() || undefined,
     };
-    return record;
   };
 
   const goToNextMenu = () => {
     const record = saveCurrentExercise();
     const updated = record ? [...completedExercises, record] : completedExercises;
     setCompletedExercises(updated);
-
-    // Update current session in localStorage
     const sess = getCurrentSession();
-    if (sess && record) {
-      sess.exercises = updated;
-      setCurrentSession(sess);
-    }
-
+    if (sess && record) { sess.exercises = updated; setCurrentSession(sess); }
     setCurrentExercise(null);
     setCurrentSets([]);
+    setMemo('');
+    setEditIndex(null);
     setPBNotice(null);
     setInputValue('');
-    setHistoryExercises(getExercisesByBodyPart(bodyPart));
+    setHistoryExercises(getExercisesByBodyPart(currentBodyPart));
     setPhase('selecting');
   };
 
   const finishTraining = () => {
     const record = saveCurrentExercise();
     const allExercises = record ? [...completedExercises, record] : completedExercises;
-
     const sess = getCurrentSession();
+    const duration = sess
+      ? Math.floor((Date.now() - new Date(sess.startTime).getTime()) / 1000)
+      : 0;
     if (sess) {
-      const duration = Math.floor((Date.now() - new Date(sess.startTime).getTime()) / 1000);
       saveSession({
         id: sess.id,
         date: new Date().toISOString(),
-        bodyPart,
+        bodyPart: initBodyPart,
         exercises: allExercises,
         durationSeconds: duration,
       });
       setCurrentSession(null);
     }
-
-    router.push(`/complete?sets=${todaySetCount}&duration=${sess ? Math.floor((Date.now() - new Date(sess.startTime).getTime()) / 1000) : 0}`);
+    const totalSets = allExercises.reduce((t, e) => t + e.sets.length, 0);
+    router.push(`/complete?sets=${totalSets}&duration=${duration}`);
   };
 
   const lastMax = lastRecord?.sets.length
@@ -274,80 +286,96 @@ function SessionContent() {
       )
     : null;
 
-  const totalCurrentSets = completedExercises.reduce((t, e) => t + e.sets.length, 0) + currentSets.length;
-
+  /* ── Render ── */
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-[#F7F7F7] text-[#111] max-w-[430px] mx-auto">
 
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-[#111] px-6 py-4 flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-white border-b border-[#EBEBEB] px-6 py-4 flex items-center justify-between shadow-sm">
         <button
           onClick={() => router.replace('/')}
-          className="flex items-center gap-2 text-[#555] active:text-white transition-colors text-sm"
+          className="flex items-center gap-2 text-[#BBBBBB] active:text-[#111] transition-colors text-sm"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M10 3L5 8l5 5" />
           </svg>
           終了
         </button>
-
         <div className="flex items-center gap-4">
           <div className="text-center">
-            <div className="text-xl font-black text-white tabular-nums">{timer}</div>
-            <div className="text-[9px] text-[#444] uppercase tracking-widest">経過時間</div>
+            <div className="text-xl font-black text-[#111] tabular-nums">{timer}</div>
+            <div className="text-[9px] text-[#BBBBBB] uppercase tracking-widest">経過時間</div>
           </div>
-          <div className="w-px h-8 bg-[#1F1F1F]" />
+          <div className="w-px h-8 bg-[#EBEBEB]" />
           <div className="text-center">
-            <div className="text-xl font-black text-[#00FF88] tabular-nums">{todaySetCount}</div>
-            <div className="text-[9px] text-[#444] uppercase tracking-widest">今日のセット</div>
+            <div className="text-xl font-black text-[#00BB66] tabular-nums">{todaySetCount}</div>
+            <div className="text-[9px] text-[#BBBBBB] uppercase tracking-widest">今日のセット</div>
           </div>
         </div>
       </div>
 
-      {/* Completed exercises summary */}
+      {/* Completed exercises chips */}
       {completedExercises.length > 0 && (
-        <div className="px-6 pt-4">
-          <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">完了済み</p>
-          <div className="flex flex-wrap gap-2 mb-4">
+        <div className="px-6 pt-4 animate-fadeInUp">
+          <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">完了済み</p>
+          <div className="flex flex-wrap gap-2 mb-1">
             {completedExercises.map((ex, i) => (
-              <span key={i} className="text-xs text-[#555] bg-[#111] border border-[#1F1F1F] px-3 py-1 rounded-full">
-                {ex.exerciseName} × {ex.sets.length}セット
+              <span key={i} className="text-xs text-[#777] bg-white border border-[#EBEBEB] px-3 py-1 rounded-full shadow-sm">
+                {ex.exerciseName} × {ex.sets.length}
               </span>
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Phase: SELECTING ── */}
+      {/* ═══════════ SELECTING PHASE ═══════════ */}
       {phase === 'selecting' && (
-        <div className="px-6 pt-6 pb-32">
-          <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-2xl font-black">種目を選ぶ</h2>
-            <span className="text-xs text-[#00FF88] bg-[#00FF88]/10 px-2 py-1 rounded-full font-bold">
-              {BODY_PART_LABELS[bodyPart]}
-            </span>
+        <div className="px-6 pt-5 pb-32 animate-fadeInUp">
+
+          {/* Body part selector */}
+          <div className="mb-6">
+            <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">部位</p>
+            <div className="flex flex-wrap gap-2">
+              {ALL_BODY_PARTS.map((bp) => (
+                <button
+                  key={bp}
+                  onClick={() => setCurrentBodyPart(bp)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    currentBodyPart === bp
+                      ? 'bg-[#00DD77] text-black shadow-sm'
+                      : 'bg-white border border-[#E8E8E8] text-[#777] active:bg-[#F0F0F0]'
+                  }`}
+                >
+                  {BODY_PART_LABELS[bp]}
+                </button>
+              ))}
+            </div>
           </div>
 
+          <h2 className="text-2xl font-black text-[#111] mb-5">種目を選ぶ</h2>
+
+          {/* Past exercises */}
           {historyExercises.length > 0 && (
             <div className="mb-6">
-              <p className="text-[10px] text-[#555] uppercase tracking-widest mb-3">過去の種目</p>
+              <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">過去の種目</p>
               <div className="flex flex-col gap-2">
                 {historyExercises.map((ex) => (
                   <button
                     key={ex.id}
                     onClick={() => selectExercise(ex)}
-                    className="bg-[#111] border border-[#1F1F1F] rounded-xl px-4 py-4 flex items-center justify-between active:border-[#333] transition-colors"
+                    className="bg-white border border-[#EBEBEB] rounded-xl px-4 py-4 flex items-center justify-between active:bg-[#F5F5F5] transition-colors shadow-sm"
                   >
-                    <span className="font-bold text-white">{ex.name}</span>
-                    <span className="text-[#444] text-xs">{ex.usageCount}回使用</span>
+                    <span className="font-bold text-[#111]">{ex.name}</span>
+                    <span className="text-[#CCCCCC] text-xs">{ex.usageCount}回使用</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
+          {/* New exercise input */}
           <div>
-            <p className="text-[10px] text-[#555] uppercase tracking-widest mb-3">
+            <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">
               {historyExercises.length > 0 ? '新しく入力' : '種目名を入力'}
             </p>
             <input
@@ -356,22 +384,21 @@ function SessionContent() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && startNewExercise(inputValue)}
               placeholder="例：ベンチプレス"
-              className="w-full bg-[#111] border border-[#1F1F1F] text-white text-lg px-4 py-4 rounded-xl outline-none focus:border-[#333] placeholder-[#333] mb-3"
+              className="w-full bg-white border border-[#EBEBEB] text-[#111] text-lg px-4 py-4 rounded-xl outline-none focus:border-[#00DD77] placeholder-[#CCCCCC] mb-3 shadow-sm transition-colors"
             />
             <button
               onClick={() => startNewExercise(inputValue)}
               disabled={!inputValue.trim()}
-              className="w-full py-4 rounded-xl bg-[#00FF88] text-[#0A0A0A] font-black text-base active:scale-[0.97] transition-transform disabled:opacity-20 disabled:active:scale-100"
+              className="w-full py-4 rounded-xl bg-[#00DD77] text-black font-black text-base active:scale-[0.97] transition-transform disabled:opacity-30 disabled:active:scale-100"
             >
               この種目で記録開始
             </button>
           </div>
 
-          {/* Finish training from selecting phase */}
           {completedExercises.length > 0 && (
             <button
               onClick={finishTraining}
-              className="w-full mt-4 py-4 rounded-xl border border-[#1F1F1F] text-[#555] font-bold text-base active:text-white active:border-[#333] transition-colors"
+              className="w-full mt-4 py-4 rounded-xl border border-[#E8E8E8] bg-white text-[#777] font-bold text-base active:text-[#111] transition-colors shadow-sm"
             >
               トレーニングを終了する
             </button>
@@ -379,32 +406,48 @@ function SessionContent() {
         </div>
       )}
 
-      {/* ── Phase: RECORDING ── */}
+      {/* ═══════════ RECORDING PHASE ═══════════ */}
       {phase === 'recording' && currentExercise && (
-        <div className="px-6 pt-6 pb-40">
-          {/* Exercise name */}
-          <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-2xl font-black">{currentExercise.name}</h2>
-            <span className="text-xs text-[#555] bg-[#111] border border-[#1F1F1F] px-2 py-1 rounded-full">
-              {BODY_PART_LABELS[bodyPart]}
+        <div className="px-6 pt-5 pb-44 animate-fadeInUp">
+
+          {/* Exercise name + tag + chart button */}
+          <div className="flex items-center gap-2 mb-5">
+            <h2 className="text-2xl font-black text-[#111] flex-1 leading-tight">
+              {currentExercise.name}
+            </h2>
+            <span className="text-xs text-[#888] bg-white border border-[#EBEBEB] px-2 py-1 rounded-full shadow-sm shrink-0">
+              {BODY_PART_LABELS[currentBodyPart]}
             </span>
+            <button
+              onClick={() => setShowChart(true)}
+              title="成長グラフ"
+              className="w-9 h-9 flex items-center justify-center rounded-full border border-[#EBEBEB] bg-white text-[#888] active:bg-[#F0F0F0] transition-colors shadow-sm shrink-0"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1,11 4,7 7,9 10,4 13,6" />
+              </svg>
+            </button>
           </div>
 
           {/* Previous MAX */}
           {lastMax && (
-            <div className="bg-[#111] border border-[#1F1F1F] rounded-2xl p-4 mb-4">
-              <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">
-                前回MAX（{new Date(lastRecord!.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}）
+            <div className="bg-white border border-[#EBEBEB] rounded-2xl p-4 mb-4 shadow-sm">
+              <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">
+                前回MAX（{new Date(lastRecord!.date).toLocaleDateString('ja-JP', {
+                  month: 'numeric', day: 'numeric',
+                })}）
               </p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-black text-[#3B82F6]">
+              <div className="flex items-baseline gap-1 flex-wrap">
+                <span className="text-3xl font-black text-[#3B82F6]">
                   {lastMax.weight % 1 === 0 ? lastMax.weight : lastMax.weight.toFixed(1)}
                 </span>
-                <span className="text-[#555] text-sm">kg</span>
-                <span className="text-[#333] text-xl font-light mx-2">×</span>
-                <span className="text-4xl font-black text-[#3B82F6]">{lastMax.reps}</span>
-                <span className="text-[#555] text-sm">回</span>
-                <span className="text-[#444] text-xs ml-2">1RM≈{calculateEstimated1RM(lastMax.weight, lastMax.reps)}kg</span>
+                <span className="text-[#AAAAAA] text-sm">kg</span>
+                <span className="text-[#DDDDDD] text-xl font-light mx-1">×</span>
+                <span className="text-3xl font-black text-[#3B82F6]">{lastMax.reps}</span>
+                <span className="text-[#AAAAAA] text-sm">回</span>
+                <span className="text-xs font-bold text-[#00AA55] ml-2 bg-[#00AA55]/10 px-2 py-0.5 rounded-full">
+                  1RM {calculateEstimated1RM(lastMax.weight, lastMax.reps)}kg
+                </span>
               </div>
             </div>
           )}
@@ -413,79 +456,195 @@ function SessionContent() {
           {pbNotice && (
             <div className={`rounded-xl px-4 py-3 mb-4 text-center font-bold text-sm ${
               pbNotice.type === 'ok'
-                ? 'bg-[#00FF88]/10 border border-[#00FF88]/25 text-[#00FF88]'
-                : 'bg-[#3B82F6]/10 border border-[#3B82F6]/25 text-[#3B82F6]'
+                ? 'bg-[#00DD77]/15 border border-[#00DD77]/30 text-[#009944]'
+                : 'bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#3B82F6]'
             }`}>
               {pbNotice.text}
             </div>
           )}
 
-          {/* Inputs */}
+          {/* Weight & reps inputs */}
           <div className="flex flex-col gap-3 mb-5">
-            <NumInput
-              label="重量"
-              value={weight}
-              unit="kg"
-              step={2.5}
-              min={0}
-              decimal
-              onChange={setWeight}
-            />
-            <NumInput
-              label="回数"
-              value={reps}
-              unit="回"
-              step={1}
-              min={1}
-              onChange={setReps}
-            />
+            <NumInput label="重量" value={weight} unit="kg" step={2.5} min={0} decimal onChange={setWeight} />
+            <NumInput label="回数" value={reps} unit="回" step={1} min={1} onChange={setReps} />
           </div>
 
-          {/* セット完了 button */}
+          {/* セット完了 */}
           <button
             onClick={handleSetComplete}
-            className="w-full py-4 rounded-xl bg-[#00FF88] text-[#0A0A0A] font-black text-base active:scale-[0.97] transition-transform mb-5"
+            className="w-full py-4 rounded-xl bg-[#00DD77] text-black font-black text-base active:scale-[0.97] transition-transform mb-5 shadow-sm"
           >
             セット完了
           </button>
 
-          {/* Completed sets list */}
+          {/* Sets list */}
           {currentSets.length > 0 && (
-            <div className="mb-4">
-              <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">このメニューのセット</p>
-              <div className="flex flex-col gap-1.5">
-                {currentSets.map((s, i) => (
-                  <div key={i} className="bg-[#111] border border-[#1F1F1F] rounded-xl px-4 py-3 flex items-center justify-between">
-                    <span className="text-[#444] text-sm">Set {i + 1}</span>
-                    <span className="font-bold text-white">
-                      {s.weight % 1 === 0 ? s.weight : s.weight.toFixed(1)}kg × {s.reps}回
-                    </span>
-                  </div>
-                ))}
+            <div className="mb-5">
+              <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">
+                このメニューのセット
+              </p>
+              <div className="flex flex-col gap-2">
+                {currentSets.map((s, i) =>
+                  editIndex === i ? (
+                    /* ── Inline edit ── */
+                    <div
+                      key={i}
+                      className="bg-white border border-[#00DD77]/40 rounded-xl p-4 shadow-sm animate-scaleIn"
+                    >
+                      <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-3">
+                        Set {i + 1} を編集
+                      </p>
+                      <div className="flex gap-3 mb-3">
+                        {/* Edit weight */}
+                        <div className="flex-1">
+                          <p className="text-[10px] text-[#BBBBBB] mb-1.5">重量 (kg)</p>
+                          <div className="flex items-center bg-[#F7F7F7] border border-[#E5E5E5] rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => setEditWeight((w) => Math.max(0, Math.round((w - 2.5) * 10) / 10))}
+                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors"
+                            >
+                              −
+                            </button>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={editWeight % 1 === 0 ? String(editWeight) : editWeight.toFixed(1)}
+                              onChange={(e) => {
+                                const n = parseFloat(e.target.value);
+                                if (!isNaN(n) && n >= 0) setEditWeight(n);
+                              }}
+                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#111]"
+                            />
+                            <button
+                              onClick={() => setEditWeight((w) => Math.round((w + 2.5) * 10) / 10)}
+                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors"
+                            >
+                              ＋
+                            </button>
+                          </div>
+                        </div>
+                        {/* Edit reps */}
+                        <div className="flex-1">
+                          <p className="text-[10px] text-[#BBBBBB] mb-1.5">回数</p>
+                          <div className="flex items-center bg-[#F7F7F7] border border-[#E5E5E5] rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => setEditReps((r) => Math.max(1, r - 1))}
+                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors"
+                            >
+                              −
+                            </button>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={String(editReps)}
+                              onChange={(e) => {
+                                const n = parseInt(e.target.value, 10);
+                                if (!isNaN(n) && n > 0) setEditReps(n);
+                              }}
+                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#111]"
+                            />
+                            <button
+                              onClick={() => setEditReps((r) => r + 1)}
+                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors"
+                            >
+                              ＋
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => saveEditSet(i)}
+                          className="flex-1 py-2.5 rounded-lg bg-[#00DD77] text-black font-bold text-sm active:scale-[0.97] transition-transform"
+                        >
+                          保存
+                        </button>
+                        <button
+                          onClick={() => setEditIndex(null)}
+                          className="flex-1 py-2.5 rounded-lg border border-[#EBEBEB] text-[#777] font-bold text-sm active:bg-[#F5F5F5] transition-colors"
+                        >
+                          キャンセル
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Normal row ── */
+                    <div
+                      key={i}
+                      className="bg-white border border-[#EBEBEB] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm"
+                    >
+                      <span className="text-[#BBBBBB] text-sm font-medium w-12 shrink-0">
+                        Set {i + 1}
+                      </span>
+                      <span className="font-bold text-[#111] flex-1">
+                        {s.weight % 1 === 0 ? s.weight : s.weight.toFixed(1)}kg × {s.reps}回
+                      </span>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => startEditSet(i)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#F5F5F5] border border-[#E8E8E8] text-[#888] active:bg-[#EBEBEB] transition-colors"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => deleteSet(i)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 border border-red-100 text-red-400 active:bg-red-100 transition-colors"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                            <path d="M2 2l8 8M10 2l-8 8" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
               </div>
             </div>
           )}
+
+          {/* Memo field */}
+          <div className="mb-5">
+            <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">メモ（任意）</p>
+            <textarea
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              placeholder="気づいたこと・体調・フォームのポイントなど…"
+              rows={3}
+              className="w-full bg-white border border-[#EBEBEB] text-[#111] text-sm px-4 py-3 rounded-xl outline-none focus:border-[#00DD77] placeholder-[#CCCCCC] resize-none shadow-sm transition-colors"
+            />
+          </div>
         </div>
       )}
 
-      {/* Bottom action bar (recording phase only) */}
+      {/* Bottom action bar (recording phase) */}
       {phase === 'recording' && (
-        <div className="fixed bottom-0 left-0 right-0 px-6 pb-10 pt-4 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/90 to-transparent max-w-[430px] mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto px-6 pb-10 pt-5 bg-gradient-to-t from-white via-white/95 to-transparent">
           <div className="flex gap-3">
             <button
               onClick={goToNextMenu}
-              className="flex-1 py-4 rounded-xl bg-[#111] border border-[#222] text-white font-bold text-base active:scale-[0.97] transition-transform"
+              className="flex-1 py-4 rounded-xl bg-[#111] text-white font-bold text-base active:scale-[0.97] transition-transform"
             >
               次のメニュー
             </button>
             <button
               onClick={finishTraining}
-              className="flex-1 py-4 rounded-xl border border-[#1F1F1F] text-[#555] font-bold text-base active:text-white active:border-[#333] transition-colors"
+              className="flex-1 py-4 rounded-xl border border-[#E8E8E8] bg-white text-[#777] font-bold text-base active:text-[#111] transition-colors shadow-sm"
             >
               終了
             </button>
           </div>
         </div>
+      )}
+
+      {/* Progress Chart Modal */}
+      {showChart && currentExercise && (
+        <ExerciseProgressChart
+          exerciseId={currentExercise.id}
+          exerciseName={currentExercise.name}
+          onClose={() => setShowChart(false)}
+        />
       )}
     </div>
   );
@@ -493,7 +652,7 @@ function SessionContent() {
 
 export default function SessionPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0A0A0A]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#F7F7F7]" />}>
       <SessionContent />
     </Suspense>
   );

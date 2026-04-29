@@ -5,7 +5,7 @@ export const BODY_PART_PHOTOS: Record<BodyPart, string> = {
   chest:
     'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=600&q=70',
   back:
-    'https://images.unsplash.com/photo-1530822847156-5df684ec5eef?auto=format&fit=crop&w=600&q=70',
+    'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=70',
   legs:
     'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=70',
   shoulders:

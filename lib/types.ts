@@ -39,6 +39,7 @@ export type ExerciseRecord = {
   bodyPart: BodyPart;
   sets: WorkoutSet[];
   isNewPB: boolean;
+  memo?: string;
 };
 
 export type WorkoutSession = {

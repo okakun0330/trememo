@@ -186,6 +186,33 @@ export function getRecommendedBodyPart(): BodyPart {
   return oldest;
 }
 
+// ── Exercise history (for progress chart) ────────────────────────────────────
+
+export function getExerciseHistory(exerciseId: string): Array<{
+  date: string;
+  sets: WorkoutSet[];
+  maxSet: WorkoutSet;
+  estimated1RM: number;
+}> {
+  const sessions = getSessions();
+  const result: Array<{ date: string; sets: WorkoutSet[]; maxSet: WorkoutSet; estimated1RM: number }> = [];
+  for (const session of sessions) {
+    const record = session.exercises.find((e) => e.exerciseId === exerciseId);
+    if (record && record.sets.length > 0) {
+      const maxSet = record.sets.reduce((best, s) =>
+        calculateEstimated1RM(s.weight, s.reps) > calculateEstimated1RM(best.weight, best.reps) ? s : best
+      );
+      result.push({
+        date: session.date,
+        sets: record.sets,
+        maxSet,
+        estimated1RM: calculateEstimated1RM(maxSet.weight, maxSet.reps),
+      });
+    }
+  }
+  return result;
+}
+
 // ── Current Session ───────────────────────────────────────────────────────────
 
 export function getCurrentSession(): CurrentSession | null {

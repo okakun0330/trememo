@@ -2,19 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getRecommendedBodyPart, getLastSession, getWeeklyStats } from '@/lib/storage';
-import { BODY_PART_LABELS, BODY_PART_EN, BodyPart } from '@/lib/types';
-import { BODY_PART_PHOTOS } from '@/lib/photos';
-import BodyPartIcon from './components/BodyPartIcon';
+import { getWeeklyStats, getLastSession } from '@/lib/storage';
 
 export default function HomePage() {
   const router = useRouter();
-  const [recommended, setRecommended] = useState<BodyPart>('chest');
-  const [lastDate, setLastDate] = useState<string | null>(null);
   const [weekly, setWeekly] = useState({ count: 0, goal: 3 });
+  const [lastDate, setLastDate] = useState<string | null>(null);
 
   useEffect(() => {
-    setRecommended(getRecommendedBodyPart());
+    setWeekly(getWeeklyStats());
     const last = getLastSession();
     if (last) {
       setLastDate(
@@ -25,24 +21,24 @@ export default function HomePage() {
         })
       );
     }
-    setWeekly(getWeeklyStats());
   }, []);
 
   const progressPct = Math.min(100, Math.round((weekly.count / weekly.goal) * 100));
 
   return (
-    <div className="min-h-screen bg-[#080808] text-white flex flex-col max-w-[430px] mx-auto px-5">
-      {/* ── Header ── */}
-      <div className="pt-14 pb-6 flex items-end justify-between">
+    <div className="min-h-screen bg-[#F7F7F7] text-[#111] flex flex-col max-w-[430px] mx-auto px-5">
+
+      {/* Header */}
+      <div className="pt-16 pb-8 flex items-end justify-between animate-fadeInUp">
         <div>
-          <h1 className="text-[2.6rem] font-black tracking-tight leading-none text-white">
+          <h1 className="text-[3.2rem] font-black tracking-tight leading-none text-[#00DD77]">
             トレメモ
           </h1>
-          <p className="text-[#444] text-xs mt-1.5 tracking-wide">前回より伸びたかが一瞬でわかる</p>
+          <p className="text-[#AAAAAA] text-xs mt-2 tracking-wide">前回より伸びたかが一瞬でわかる</p>
         </div>
         <button
           onClick={() => router.push('/settings')}
-          className="w-10 h-10 flex items-center justify-center rounded-full border border-[#1F1F1F] text-[#444] active:text-white active:border-[#333] transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-full border border-[#E8E8E8] text-[#BBBBBB] active:text-[#111] active:border-[#CCC] transition-colors bg-white shadow-sm"
           aria-label="設定"
         >
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -52,91 +48,47 @@ export default function HomePage() {
         </button>
       </div>
 
-      {/* ── Weekly progress ── */}
-      <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-5 mb-4">
+      {/* Weekly progress */}
+      <div
+        className="bg-white border border-[#EBEBEB] rounded-2xl p-5 mb-5 shadow-sm animate-fadeInUp"
+        style={{ animationDelay: '0.06s' }}
+      >
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] text-[#444] uppercase tracking-widest">今週の達成</span>
-          <span className="text-[10px] text-[#333]">目標 {weekly.goal}回</span>
+          <span className="text-[10px] text-[#BBBBBB] uppercase tracking-widest">今週の達成</span>
+          <span className="text-[10px] text-[#CCCCCC]">目標 {weekly.goal}回</span>
         </div>
         <div className="flex items-end gap-2 mb-3.5">
-          <span className="text-5xl font-black text-white leading-none">{weekly.count}</span>
-          <span className="text-[#2a2a2a] text-2xl font-light mb-1">/ {weekly.goal}</span>
+          <span className="text-5xl font-black text-[#111] leading-none">{weekly.count}</span>
+          <span className="text-[#CCCCCC] text-2xl font-light mb-1">/ {weekly.goal}</span>
           {weekly.count >= weekly.goal && (
-            <span className="text-[#00FF88] text-xs font-bold mb-1 ml-auto">達成</span>
+            <span className="text-[#00AA55] text-xs font-bold mb-1 ml-auto">達成！</span>
           )}
         </div>
-        <div className="h-0.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+        <div className="h-1 bg-[#F0F0F0] rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#00FF88] rounded-full transition-all duration-700"
+            className="h-full bg-[#00DD77] rounded-full transition-all duration-700"
             style={{ width: `${progressPct}%` }}
           />
         </div>
+        {lastDate && (
+          <p className="text-[10px] text-[#CCCCCC] mt-3">前回：{lastDate}</p>
+        )}
       </div>
 
-      {/* ── Recommended card (photo bg) + Last session ── */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        {/* Recommended — photo card */}
-        <div
-          className="relative rounded-2xl overflow-hidden aspect-[3/4] cursor-pointer active:scale-[0.97] transition-transform"
-          style={{
-            backgroundImage: `url(${BODY_PART_PHOTOS[recommended]})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center top',
-            backgroundColor: '#111',
-          }}
-          onClick={() => router.push(`/select?recommend=${recommended}`)}
-        >
-          {/* gradient overlay */}
-          <div className="absolute inset-0 photo-card-overlay" />
-          {/* icon */}
-          <div className="absolute top-3 left-3">
-            <span className="text-[9px] text-[#00FF88] font-bold uppercase tracking-widest">おすすめ</span>
-          </div>
-          <div className="absolute top-7 left-3">
-            <BodyPartIcon bodyPart={recommended} size={26} className="text-[#00FF88]" />
-          </div>
-          {/* label */}
-          <div className="absolute bottom-3 left-3">
-            <div className="text-2xl font-black text-white leading-tight">
-              {BODY_PART_LABELS[recommended]}
-            </div>
-            <div className="text-[9px] text-white/40 tracking-widest mt-0.5">
-              {BODY_PART_EN[recommended]}
-            </div>
-          </div>
-        </div>
-
-        {/* Last session */}
-        <div className="bg-[#111] border border-[#1a1a1a] rounded-2xl p-4 aspect-[3/4] flex flex-col">
-          <span className="text-[9px] text-[#444] uppercase tracking-widest block mb-auto">前回</span>
-          {lastDate ? (
-            <div>
-              <div className="text-lg font-black text-white leading-snug">{lastDate}</div>
-              <div className="text-[10px] text-[#333] mt-1">トレーニング日</div>
-            </div>
-          ) : (
-            <div className="text-xs text-[#222] leading-snug">まだ<br />記録なし</div>
-          )}
-        </div>
-      </div>
-
-      {/* ── CTA buttons ── */}
-      <div className="flex flex-col gap-3 pb-12">
-        <button
-          onClick={() => router.push(`/select?recommend=${recommended}`)}
-          className="w-full py-[18px] rounded-2xl bg-[#00FF88] text-[#080808] font-black text-lg tracking-tight active:scale-[0.97] transition-transform"
-        >
-          {BODY_PART_LABELS[recommended]}でトレーニング開始
-        </button>
+      {/* CTA buttons */}
+      <div
+        className="flex flex-col gap-3 pb-12 animate-fadeInUp"
+        style={{ animationDelay: '0.12s' }}
+      >
         <button
           onClick={() => router.push('/select')}
-          className="w-full py-[18px] rounded-2xl bg-[#111] border border-[#1a1a1a] text-white font-bold text-base active:scale-[0.97] transition-transform"
+          className="w-full py-5 rounded-2xl bg-[#00DD77] text-black font-black text-lg active:scale-[0.97] transition-transform shadow-sm"
         >
-          部位を選ぶ
+          今日のトレーニング開始
         </button>
         <button
           onClick={() => router.push('/history')}
-          className="w-full py-3 text-[#444] font-medium text-sm active:text-white transition-colors"
+          className="w-full py-5 rounded-2xl bg-white border border-[#E8E8E8] text-[#111] font-bold text-base active:scale-[0.97] transition-transform shadow-sm"
         >
           過去の記録を見る
         </button>
