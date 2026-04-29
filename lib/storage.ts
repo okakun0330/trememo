@@ -37,6 +37,7 @@ const KEYS = {
   PBS: 'trememo_pbs',
   CURRENT_SESSION: 'trememo_current_session',
   WEEKLY_GOAL: 'trememo_weekly_goal',
+  USER_NAME: 'trememo_user_name',
 };
 
 function getItem<T>(key: string, defaultValue: T): T {
@@ -170,6 +171,18 @@ export function updatePersonalBest(
     return { isNewPB: true, pbType };
   }
   return { isNewPB: false };
+}
+
+// ── Weekly goal ───────────────────────────────────────────────────────────────
+
+// ── User profile ──────────────────────────────────────────────────────────────
+
+export function getUserName(): string {
+  return getItem<string>(KEYS.USER_NAME, '');
+}
+
+export function setUserName(name: string): void {
+  setItem(KEYS.USER_NAME, name.trim());
 }
 
 // ── Weekly goal ───────────────────────────────────────────────────────────────

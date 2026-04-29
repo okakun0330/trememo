@@ -20,6 +20,7 @@ import {
   ExerciseType, WorkoutSet,
 } from '@/lib/types';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
+import MuscleMouseMascot from '../components/MuscleMouseMascot';
 
 const ALL_BODY_PARTS: BodyPart[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'abs', 'cardio'];
 
@@ -373,24 +374,26 @@ function SessionContent() {
     <div className="min-h-screen bg-[#0A0A0A] text-white max-w-[430px] mx-auto">
 
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-[#0D0D0D] border-b border-[#1F1F1F] px-6 py-4 flex items-center justify-between">
-        <button onClick={() => router.replace('/')}
-          className="flex items-center gap-2 text-[#555] active:text-white transition-colors text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M10 3L5 8l5 5" />
-          </svg>
-          終了
-        </button>
-        <div className="flex items-center gap-4">
-          <div className="text-center">
-            <div className="text-xl font-black text-white tabular-nums">{timer}</div>
-            <div className="text-[9px] text-[#444] uppercase tracking-widest">経過時間</div>
-          </div>
-          <div className="w-px h-8 bg-[#222]" />
-          <div className="text-center">
-            <div className="text-xl font-black text-[#00FF88] tabular-nums"
-              style={{ textShadow: '0 0 10px rgba(0,255,136,0.5)' }}>{todaySetCount}</div>
-            <div className="text-[9px] text-[#444] uppercase tracking-widest">今日のセット</div>
+      <div className="sticky top-0 z-10 bg-[#0D0D0D] border-b border-[#1F1F1F] px-5 py-3">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.replace('/')}
+            className="flex items-center gap-1.5 text-[#555] active:text-white transition-colors text-sm shrink-0">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M9 2L4 7l5 5"/>
+            </svg>
+            終了
+          </button>
+          <div className="flex-1 flex items-center justify-center gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-black text-white tabular-nums leading-tight">{timer}</div>
+              <div className="text-[9px] text-[#333] uppercase tracking-widest">経過時間</div>
+            </div>
+            <div className="w-px h-8 bg-[#222]"/>
+            <div className="text-center">
+              <div className="text-2xl font-black text-[#00FF88] tabular-nums leading-tight"
+                style={{ textShadow: '0 0 10px rgba(0,255,136,0.5)' }}>{todaySetCount}</div>
+              <div className="text-[9px] text-[#333] uppercase tracking-widest">今日のセット</div>
+            </div>
           </div>
         </div>
       </div>
@@ -481,25 +484,31 @@ function SessionContent() {
       {phase === 'recording' && currentExercise && (
         <div className="px-6 pt-5 pb-44 animate-fadeInUp">
 
-          {/* Exercise name header */}
-          <div className="flex items-center gap-2 mb-5">
-            <h2 className="text-2xl font-black text-white flex-1 leading-tight">
-              {currentExercise.name}
-            </h2>
-            <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded shrink-0 ${TYPE_COLOR[exerciseType]}`}>
-              {TYPE_LABEL[exerciseType]}
-            </span>
-            <span className="text-xs text-[#555] bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-1 rounded-full shrink-0">
-              {BODY_PART_LABELS[currentBodyPart]}
-            </span>
-            {exerciseType === 'WEIGHT' && (
-              <button onClick={() => setShowChart(true)} title="成長グラフ"
-                className="w-9 h-9 flex items-center justify-center rounded-full border border-[#2A2A2A] bg-[#1A1A1A] text-[#555] active:bg-[#222] transition-colors shrink-0">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="1,11 4,7 7,9 10,4 13,6" />
-                </svg>
-              </button>
-            )}
+          {/* Exercise name header with mini mascot */}
+          <div className="flex items-start gap-3 mb-5">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${TYPE_COLOR[exerciseType]}`}>
+                  {TYPE_LABEL[exerciseType]}
+                </span>
+                <span className="text-xs text-[#555] bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-0.5 rounded-full">
+                  {BODY_PART_LABELS[currentBodyPart]}
+                </span>
+                {exerciseType === 'WEIGHT' && (
+                  <button onClick={() => setShowChart(true)} title="成長グラフ"
+                    className="w-7 h-7 flex items-center justify-center rounded-full border border-[#2A2A2A] bg-[#1A1A1A] text-[#555] active:bg-[#222] transition-colors">
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="1,11 4,7 7,9 10,4 13,6" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <h2 className="text-2xl font-black text-white leading-tight">{currentExercise.name}</h2>
+            </div>
+            {/* Mini mascot (thumbs up) */}
+            <div className="shrink-0 -mt-1">
+              <MuscleMouseMascot size={64} variant="small" />
+            </div>
           </div>
 
           {/* Previous MAX (WEIGHT only) */}

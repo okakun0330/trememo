@@ -1,3 +1,4 @@
+import React from 'react';
 import { BodyPart } from '@/lib/types';
 
 interface IconProps {
@@ -126,11 +127,17 @@ export default function BodyPartIcon({
   bodyPart,
   size = 40,
   className,
+  style,
 }: {
   bodyPart: BodyPart;
   size?: number;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const Icon = ICON_MAP[bodyPart];
-  return <Icon size={size} className={className} />;
+  return (
+    <span style={style} className={className}>
+      <Icon size={size} />
+    </span>
+  );
 }

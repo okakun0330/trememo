@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSessions, getPersonalBests } from '@/lib/storage';
 import { BODY_PART_LABELS, ExerciseType, PersonalBest, WorkoutSession, WorkoutSet } from '@/lib/types';
 import WorkoutCalendar from '../components/WorkoutCalendar';
@@ -50,13 +50,14 @@ const TYPE_LABEL: Record<ExerciseType, string> = {
 
 function Empty({ message }: { message: string }) {
   return (
-    <div className="text-center py-24">
-      <div className="w-10 h-10 rounded-full border border-[#222] flex items-center justify-center mx-auto mb-4 bg-[#141414]">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#444" strokeWidth="1.5" strokeLinecap="round">
-          <circle cx="8" cy="8" r="6" /><path d="M8 5v3M8 10v.5" />
+    <div className="text-center py-20">
+      <div className="w-12 h-12 rounded-full border border-[#222] flex items-center justify-center mx-auto mb-4 bg-[#141414]">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#444" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="9" cy="9" r="7" /><path d="M9 6v3M9 11v.5" />
         </svg>
       </div>
       <p className="text-[#555] text-sm">{message}</p>
+      <p className="text-[#333] text-xs mt-1">トレーニングを記録すると表示されます</p>
     </div>
   );
 }
@@ -68,12 +69,15 @@ const TABS = [
 ] as const;
 type Tab = typeof TABS[number]['key'];
 
-// ── Component ──────────────────────────────────────────────────────────────────
-export default function HistoryPage() {
+// ── Inner Component (needs searchParams) ──────────────────────────────────────
+function HistoryContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initTab = (searchParams.get('tab') as Tab) || 'calendar';
+
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [pbs, setPBs] = useState<PersonalBest[]>([]);
-  const [tab, setTab] = useState<Tab>('calendar');
+  const [tab, setTab] = useState<Tab>(initTab);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [chartEx, setChartEx] = useState<{ id: string; name: string } | null>(null);
 
@@ -82,6 +86,12 @@ export default function HistoryPage() {
     setSessions([...all].reverse());
     setPBs(Object.values(getPersonalBests()).sort((a, b) => b.estimated1RM - a.estimated1RM));
   }, []);
+
+  // sync tab when URL changes (e.g. back-nav from BottomNav)
+  useEffect(() => {
+    const t = (searchParams.get('tab') as Tab) || 'calendar';
+    setTab(t);
+  }, [searchParams]);
 
   const toggleExpand = (id: string) =>
     setExpanded((prev) => {
@@ -95,29 +105,32 @@ export default function HistoryPage() {
       year: 'numeric', month: 'numeric', day: 'numeric', weekday: 'short',
     });
 
-  return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pb-24 max-w-[430px] mx-auto">
+  const handleTabChange = (key: Tab) => {
+    setTab(key);
+    router.replace(key === 'pbs' ? '/history?tab=pbs' : '/history', { scroll: false });
+  };
 
-      <div className="px-6 pt-14 pb-6 animate-fadeInUp">
-        <button onClick={() => router.back()}
-          className="flex items-center gap-2 text-[#555] mb-8 active:text-white transition-colors text-sm">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M10 3L5 8l5 5" />
-          </svg>
-          戻る
-        </button>
+  return (
+    <div className="min-h-screen bg-[#0A0A0A] text-white pb-28 max-w-[430px] mx-auto">
+
+      {/* Header */}
+      <div className="px-6 pt-14 pb-4 animate-fadeInUp">
         <h2 className="text-3xl font-black tracking-tight text-white">記録</h2>
       </div>
 
       {/* Tabs */}
-      <div className="px-6 mb-6 animate-fadeInUp" style={{ animationDelay: '0.06s' }}>
-        <div className="flex bg-[#141414] border border-[#222] rounded-xl p-1 gap-1">
+      <div className="px-6 mb-5 animate-fadeInUp" style={{ animationDelay: '0.04s' }}>
+        <div className="flex gap-0 border-b border-[#1F1F1F]">
           {TABS.map(({ key, label }) => (
-            <button key={key} onClick={() => setTab(key)}
-              className={`flex-1 py-2.5 rounded-lg font-bold text-xs transition-all ${
-                tab === key ? 'bg-[#00FF88] text-black shadow-sm' : 'text-[#555] active:bg-[#1F1F1F]'
+            <button key={key} onClick={() => handleTabChange(key)}
+              className={`flex-1 py-3 font-bold text-sm transition-all relative ${
+                tab === key ? 'text-[#00FF88]' : 'text-[#444]'
               }`}>
               {label}
+              {tab === key && (
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#00FF88] rounded-full"
+                  style={{ boxShadow: '0 0 6px rgba(0,255,136,0.6)' }} />
+              )}
             </button>
           ))}
         </div>
@@ -139,76 +152,60 @@ export default function HistoryPage() {
           {sessions.length === 0 ? (
             <Empty message="まだトレーニング記録がありません" />
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {sessions.map((session) => {
                 const isOpen = expanded.has(session.id);
                 const totalSets = session.exercises.reduce((t, e) => t + e.sets.length, 0);
                 const color = BODY_COLORS[session.bodyPart] || '#888';
-
                 return (
                   <div key={session.id} className="bg-[#141414] border border-[#222] rounded-2xl overflow-hidden">
-
                     <button
                       onClick={() => toggleExpand(session.id)}
                       className="w-full px-5 py-4 flex items-center gap-3 active:bg-[#1A1A1A] transition-colors text-left"
                     >
                       <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
                       <div className="flex-1 min-w-0">
-                        <div className="font-black text-white text-sm leading-tight">{fmtDate(session.date)}</div>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="font-black text-white text-sm">{fmtDate(session.date)}</div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-xs font-bold" style={{ color }}>{BODY_PART_LABELS[session.bodyPart]}</span>
                           <span className="text-[#333] text-xs">·</span>
                           <span className="text-xs text-[#555]">{session.exercises.length}種目 / {totalSets}セット</span>
                           {session.durationSeconds > 0 && (
-                            <>
-                              <span className="text-[#333] text-xs">·</span>
-                              <span className="text-xs text-[#555]">{formatDuration(session.durationSeconds)}</span>
-                            </>
+                            <><span className="text-[#333] text-xs">·</span>
+                            <span className="text-xs text-[#555]">{formatDuration(session.durationSeconds)}</span></>
                           )}
                         </div>
                       </div>
-                      <svg
-                        width="14" height="14" viewBox="0 0 14 14" fill="none"
-                        stroke="#444" strokeWidth="1.5" strokeLinecap="round"
-                        className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-                      >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+                        stroke="#333" strokeWidth="1.5" strokeLinecap="round"
+                        className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
                         <path d="M2 5l5 5 5-5" />
                       </svg>
                     </button>
 
                     {isOpen && (
-                      <div className="border-t border-[#1F1F1F] px-5 py-4 space-y-5 animate-fadeInUp">
+                      <div className="border-t border-[#1A1A1A] px-5 py-4 space-y-4 animate-fadeInUp">
                         {session.exercises.map((ex, ei) => {
                           const type: ExerciseType = ex.exerciseType || 'WEIGHT';
                           return (
                             <div key={ei}>
-                              <div className="flex items-center gap-2 mb-2.5">
+                              <div className="flex items-center gap-2 mb-2">
                                 <span className="font-black text-white text-sm flex-1">{ex.exerciseName}</span>
                                 {ex.isNewPB && (
-                                  <span className="text-[9px] text-[#00FF88] font-bold border border-[#00FF88]/25 bg-[#00FF88]/10 px-1.5 py-0.5 rounded">
-                                    PB
-                                  </span>
+                                  <span className="text-[9px] text-[#00FF88] font-bold border border-[#00FF88]/25 bg-[#00FF88]/10 px-1.5 py-0.5 rounded">PB</span>
                                 )}
-                                <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${TYPE_COLOR[type]}`}>
-                                  {TYPE_LABEL[type]}
-                                </span>
+                                <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${TYPE_COLOR[type]}`}>{TYPE_LABEL[type]}</span>
                               </div>
                               <div className="flex flex-wrap gap-1.5">
                                 {ex.sets.map((s, si) => (
-                                  <span
-                                    key={si}
-                                    className="text-xs bg-[#1A1A1A] border border-[#2A2A2A] px-2.5 py-1.5 rounded-xl text-[#888] font-medium"
-                                  >
+                                  <span key={si} className="text-xs bg-[#1A1A1A] border border-[#2A2A2A] px-2.5 py-1.5 rounded-xl text-[#888] font-medium">
                                     <span className="text-[#444] mr-1">{si + 1}</span>
                                     {formatSet(s, type)}
                                   </span>
                                 ))}
                               </div>
                               {ex.memo && (
-                                <div className="mt-2 flex items-start gap-1.5">
-                                  <span className="text-[#444] text-xs mt-px">📝</span>
-                                  <p className="text-xs text-[#666] leading-relaxed">{ex.memo}</p>
-                                </div>
+                                <p className="text-xs text-[#555] mt-2 pl-1">📝 {ex.memo}</p>
                               )}
                             </div>
                           );
@@ -230,13 +227,16 @@ export default function HistoryPage() {
             <Empty message="まだ自己ベストの記録がありません" />
           ) : (
             <div className="flex flex-col gap-3">
-              {pbs.map((pb) => (
+              {pbs.map((pb, idx) => (
                 <div key={pb.exerciseId}
                   className="bg-[#141414] border border-[#222] rounded-2xl p-5">
                   <div className="flex items-start justify-between mb-3">
-                    <span className="font-black text-white flex-1 pr-2">{pb.exerciseName}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#555] text-sm font-bold">#{idx + 1}</span>
+                      <span className="font-black text-white flex-1 pr-2">{pb.exerciseName}</span>
+                    </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[#555] text-xs mt-0.5">
+                      <span className="text-[#444] text-xs">
                         {new Date(pb.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                       </span>
                       <button
@@ -251,12 +251,14 @@ export default function HistoryPage() {
                     </div>
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-[#00FF88]">
+                    <span className="text-4xl font-black text-[#00FF88]"
+                      style={{ textShadow: '0 0 12px rgba(0,255,136,0.4)' }}>
                       {pb.weight % 1 === 0 ? pb.weight : pb.weight.toFixed(1)}
                     </span>
                     <span className="text-[#555] text-sm">kg</span>
-                    <span className="text-[#333] text-xl font-light mx-2">×</span>
-                    <span className="text-4xl font-black text-[#00FF88]">{pb.reps}</span>
+                    <span className="text-[#333] text-xl font-light mx-1">×</span>
+                    <span className="text-4xl font-black text-[#00FF88]"
+                      style={{ textShadow: '0 0 12px rgba(0,255,136,0.4)' }}>{pb.reps}</span>
                     <span className="text-[#555] text-sm">回</span>
                   </div>
                   <div className="mt-2">
@@ -271,7 +273,6 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* Chart modal */}
       {chartEx && (
         <ExerciseProgressChart
           exerciseId={chartEx.id}
@@ -282,5 +283,14 @@ export default function HistoryPage() {
 
       <BottomNav />
     </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+export default function HistoryPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0A0A0A]" />}>
+      <HistoryContent />
+    </Suspense>
   );
 }
