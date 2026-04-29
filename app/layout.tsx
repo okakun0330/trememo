@@ -5,7 +5,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'TREMEMO',
+  title: 'トレメモ',
   description: '前回より伸びたかが一瞬でわかる、シンプルな筋トレメモアプリ',
 };
 

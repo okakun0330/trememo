@@ -10,14 +10,14 @@ export const BODY_PART_LABELS: Record<BodyPart, string> = {
   cardio: '有酸素',
 };
 
-export const BODY_PART_EMOJIS: Record<BodyPart, string> = {
-  chest: '💪',
-  back: '🔙',
-  legs: '🦵',
-  shoulders: '🙆',
-  arms: '💪',
-  abs: '🔥',
-  cardio: '🏃',
+export const BODY_PART_EN: Record<BodyPart, string> = {
+  chest: 'CHEST',
+  back: 'BACK',
+  legs: 'LEGS',
+  shoulders: 'SHOULDERS',
+  arms: 'ARMS',
+  abs: 'ABS',
+  cardio: 'CARDIO',
 };
 
 export type WorkoutSet = {
@@ -46,7 +46,7 @@ export type WorkoutSession = {
   date: string;
   bodyPart: BodyPart;
   exercises: ExerciseRecord[];
-  totalXP: number;
+  durationSeconds: number;
 };
 
 export type PersonalBest = {
@@ -63,5 +63,4 @@ export type CurrentSession = {
   startTime: string;
   bodyPart: BodyPart;
   exercises: ExerciseRecord[];
-  totalXP: number;
 };
