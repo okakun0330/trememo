@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { BODY_PART_LABELS, BODY_PART_EN, BodyPart } from '@/lib/types';
 import BodyPartIcon from '../components/BodyPartIcon';
 import { startNewSession } from '@/lib/storage';
@@ -19,95 +20,15 @@ const PART_COLOR: Record<BodyPart, string> = {
   cardio:    '#00FF88',
 };
 
-// Minimalist SVG mascot for each card (compact inline version)
-function CardMascot({ color, bodyPart }: { color: string; bodyPart: BodyPart }) {
-  // Cardio gets special animated heartbeat version
-  if (bodyPart === 'cardio') {
-    return (
-      <svg viewBox="0 0 80 80" width="80" height="80">
-        <defs>
-          <radialGradient id={`cg-${bodyPart}`} cx="40%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="#F5E0C0"/>
-            <stop offset="100%" stopColor="#D4A870"/>
-          </radialGradient>
-        </defs>
-        {/* Ears */}
-        <ellipse cx="20" cy="16" rx="11" ry="11" fill="#C8A070"/>
-        <ellipse cx="20" cy="16" rx="7" ry="7" fill="#F9AABB"/>
-        <ellipse cx="60" cy="16" rx="11" ry="11" fill="#C8A070"/>
-        <ellipse cx="60" cy="16" rx="7" ry="7" fill="#F9AABB"/>
-        {/* Head */}
-        <ellipse cx="40" cy="34" rx="21" ry="20" fill={`url(#cg-${bodyPart})`}/>
-        {/* Headband */}
-        <path d="M20 26 Q40 20 60 26 Q60 30 40 24 Q20 30 20 26Z" fill={color}/>
-        {/* Eyes */}
-        <circle cx="32" cy="33" r="5" fill="white"/>
-        <circle cx="33" cy="33.5" r="3.5" fill="#1A0800"/>
-        <circle cx="34" cy="32" r="1.3" fill="white"/>
-        <circle cx="48" cy="33" r="5" fill="white"/>
-        <circle cx="49" cy="33.5" r="3.5" fill="#1A0800"/>
-        <circle cx="50" cy="32" r="1.3" fill="white"/>
-        {/* Smile */}
-        <path d="M32 42 Q40 49 48 42" stroke="#8B5A2B" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-        {/* Body */}
-        <ellipse cx="40" cy="65" rx="16" ry="14" fill={`url(#cg-${bodyPart})`}/>
-        <ellipse cx="40" cy="66" rx="13" ry="12" fill="#111"/>
-        {/* Arms running pose */}
-        <ellipse cx="20" cy="58" rx="7" ry="11" fill={`url(#cg-${bodyPart})`} transform="rotate(30 20 58)"/>
-        <ellipse cx="60" cy="60" rx="7" ry="11" fill={`url(#cg-${bodyPart})`} transform="rotate(-30 60 60)"/>
-      </svg>
-    );
-  }
-
+function CardMascot({ bodyPart, size = 90 }: { color: string; bodyPart: BodyPart; size?: number }) {
   return (
-    <svg viewBox="0 0 80 80" width="80" height="80">
-      <defs>
-        <radialGradient id={`sg-${bodyPart}`} cx="40%" cy="30%" r="70%">
-          <stop offset="0%" stopColor="#F5E0C0"/>
-          <stop offset="100%" stopColor="#D4A870"/>
-        </radialGradient>
-        <radialGradient id={`mg-${bodyPart}`} cx="30%" cy="20%" r="80%">
-          <stop offset="0%" stopColor="#ECC898"/>
-          <stop offset="100%" stopColor="#C8965A"/>
-        </radialGradient>
-      </defs>
-      {/* Ears */}
-      <ellipse cx="18" cy="15" rx="11" ry="11" fill="#C8A070"/>
-      <ellipse cx="18" cy="15" rx="7"  ry="7"  fill="#F9AABB"/>
-      <ellipse cx="62" cy="15" rx="11" ry="11" fill="#C8A070"/>
-      <ellipse cx="62" cy="15" rx="7"  ry="7"  fill="#F9AABB"/>
-      {/* Head */}
-      <ellipse cx="40" cy="34" rx="21" ry="20" fill={`url(#sg-${bodyPart})`}/>
-      {/* Headband with color */}
-      <path d="M20 26 Q40 20 60 26 Q60 30 40 24 Q20 30 20 26Z" fill={color}/>
-      {/* Eyes */}
-      <circle cx="32" cy="33" r="5.5" fill="white"/>
-      <circle cx="33" cy="33.5" r="4" fill="#1A0800"/>
-      <circle cx="34.5" cy="32" r="1.5" fill="white"/>
-      <circle cx="48" cy="33" r="5.5" fill="white"/>
-      <circle cx="49" cy="33.5" r="4" fill="#1A0800"/>
-      <circle cx="50.5" cy="32" r="1.5" fill="white"/>
-      {/* Smile */}
-      <path d="M32 42 Q40 49 48 42" stroke="#8B5A2B" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-      {/* Neck */}
-      <rect x="36" y="51" width="8" height="6" rx="3" fill="#D4A870"/>
-      {/* Body */}
-      <ellipse cx="40" cy="68" rx="17" ry="14" fill={`url(#sg-${bodyPart})`}/>
-      <ellipse cx="40" cy="69" rx="13" ry="11" fill="#111"/>
-      {/* Left arm (flex) */}
-      <ellipse cx="18" cy="62" rx="7" ry="11" fill={`url(#sg-${bodyPart})`} transform="rotate(-30 18 62)"/>
-      <ellipse cx="12" cy="52" rx="8" ry="6" fill={`url(#mg-${bodyPart})`}/>
-      {/* Right arm (flex) */}
-      <ellipse cx="62" cy="62" rx="7" ry="11" fill={`url(#sg-${bodyPart})`} transform="rotate(30 62 62)"/>
-      <ellipse cx="68" cy="52" rx="8" ry="6" fill={`url(#mg-${bodyPart})`}/>
-      {/* Color highlight on relevant body part */}
-      {bodyPart === 'chest' && <ellipse cx="40" cy="66" rx="9" ry="7" fill={color} opacity="0.35"/>}
-      {bodyPart === 'back' && <ellipse cx="40" cy="68" rx="12" ry="8" fill={color} opacity="0.25"/>}
-      {bodyPart === 'arms' && <><ellipse cx="12" cy="52" rx="8" ry="6" fill={color} opacity="0.5"/><ellipse cx="68" cy="52" rx="8" ry="6" fill={color} opacity="0.5"/></>}
-      {bodyPart === 'shoulders' && <><ellipse cx="22" cy="57" rx="7" ry="5" fill={color} opacity="0.5"/><ellipse cx="58" cy="57" rx="7" ry="5" fill={color} opacity="0.5"/></>}
-      {bodyPart === 'legs' && <><ellipse cx="30" cy="79" rx="6" ry="5" fill={color} opacity="0.6"/><ellipse cx="50" cy="79" rx="6" ry="5" fill={color} opacity="0.6"/></>}
-      {bodyPart === 'abs' && <><line x1="40" y1="60" x2="40" y2="75" stroke={color} strokeWidth="1.5" opacity="0.5"/><line x1="33" y1="63" x2="47" y2="63" stroke={color} strokeWidth="1" opacity="0.4"/><line x1="33" y1="68" x2="47" y2="68" stroke={color} strokeWidth="1" opacity="0.4"/></>}
-    </svg>
+    <Image
+      src={`/mascot/${bodyPart}.png`}
+      alt={bodyPart}
+      width={size}
+      height={size}
+      style={{ objectFit: 'contain' }}
+    />
   );
 }
 
