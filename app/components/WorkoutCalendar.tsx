@@ -60,18 +60,18 @@ export default function WorkoutCalendar({ sessions }: Props) {
       <div className="flex items-center justify-between mb-5">
         <button
           onClick={() => { setViewDate(new Date(year, month - 1, 1)); setSelectedDateStr(null); }}
-          className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#E8E8E8] bg-white text-[#AAAAAA] active:text-[#111] active:border-[#CCC] transition-colors shadow-sm"
+          className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#222] bg-[#141414] text-[#555] active:text-white active:border-[#333] transition-colors"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M8 2L4 6l4 4" />
           </svg>
         </button>
-        <span className="font-black text-base text-[#111]">
+        <span className="font-black text-base text-white">
           {year}年{month + 1}月
         </span>
         <button
           onClick={() => { setViewDate(new Date(year, month + 1, 1)); setSelectedDateStr(null); }}
-          className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#E8E8E8] bg-white text-[#AAAAAA] active:text-[#111] active:border-[#CCC] transition-colors shadow-sm"
+          className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#222] bg-[#141414] text-[#555] active:text-white active:border-[#333] transition-colors"
         >
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M4 2l4 4-4 4" />
@@ -85,7 +85,7 @@ export default function WorkoutCalendar({ sessions }: Props) {
           <div
             key={d}
             className={`text-center text-[10px] font-bold py-1.5 ${
-              i === 5 ? 'text-[#60a5fa]' : i === 6 ? 'text-[#f87171]' : 'text-[#BBBBBB]'
+              i === 5 ? 'text-[#60a5fa]' : i === 6 ? 'text-[#f87171]' : 'text-[#444]'
             }`}
           >
             {d}
@@ -109,11 +109,11 @@ export default function WorkoutCalendar({ sessions }: Props) {
               onClick={() => setSelectedDateStr(isSelected ? null : dateStr)}
               className={`relative flex flex-col items-center justify-center h-9 mx-px rounded-lg transition-all active:scale-90 ${
                 isSelected
-                  ? 'bg-[#00DD77] shadow-sm'
+                  ? 'bg-[#00FF88]'
                   : isToday
-                  ? 'border border-[#00DD77]/40 bg-[#00DD77]/8'
+                  ? 'border border-[#00FF88]/40 bg-[#00FF88]/5'
                   : hasSessions
-                  ? 'bg-white border border-[#EBEBEB] shadow-sm'
+                  ? 'bg-[#1A1A1A] border border-[#2A2A2A]'
                   : ''
               }`}
             >
@@ -122,10 +122,10 @@ export default function WorkoutCalendar({ sessions }: Props) {
                   isSelected
                     ? 'text-black'
                     : isToday
-                    ? 'text-[#00AA55]'
+                    ? 'text-[#00FF88]'
                     : hasSessions
-                    ? 'text-[#111]'
-                    : 'text-[#CCCCCC]'
+                    ? 'text-white'
+                    : 'text-[#333]'
                 }`}
               >
                 {day}
@@ -154,7 +154,7 @@ export default function WorkoutCalendar({ sessions }: Props) {
           return (
             <div key={bp} className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-[10px] text-[#AAAAAA]">
+              <span className="text-[10px] text-[#555]">
                 {BODY_PART_LABELS[bp as keyof typeof BODY_PART_LABELS]}
               </span>
             </div>
@@ -168,7 +168,7 @@ export default function WorkoutCalendar({ sessions }: Props) {
           {selectedSessions.map((session) => (
             <div
               key={session.id}
-              className="bg-white border border-[#EBEBEB] rounded-2xl p-4 shadow-sm animate-scaleIn"
+              className="bg-[#141414] border border-[#222] rounded-2xl p-4 animate-scaleIn"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -176,34 +176,34 @@ export default function WorkoutCalendar({ sessions }: Props) {
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ backgroundColor: BODY_COLORS[session.bodyPart] }}
                   />
-                  <span className="font-black text-[#111]">
+                  <span className="font-black text-white">
                     {BODY_PART_LABELS[session.bodyPart]}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
                   {session.durationSeconds > 0 && (
-                    <span className="text-xs text-[#AAAAAA]">
+                    <span className="text-xs text-[#555]">
                       {fmtDuration(session.durationSeconds)}
                     </span>
                   )}
-                  <span className="text-xs text-[#BBBBBB]">
+                  <span className="text-xs text-[#444]">
                     {session.exercises.reduce((t, e) => t + e.sets.length, 0)}セット
                   </span>
                 </div>
               </div>
               {session.exercises.length > 0 && (
-                <div className="space-y-1 border-t border-[#F5F5F5] pt-3">
+                <div className="space-y-1 border-t border-[#1F1F1F] pt-3">
                   {session.exercises.map((ex, i) => (
                     <div key={i} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-[#555] text-sm">{ex.exerciseName}</span>
+                        <span className="text-[#888] text-sm">{ex.exerciseName}</span>
                         {ex.isNewPB && (
-                          <span className="text-[9px] text-[#00AA55] font-bold border border-[#00AA55]/25 bg-[#00AA55]/5 px-1.5 py-px rounded">
+                          <span className="text-[9px] text-[#00FF88] font-bold border border-[#00FF88]/25 bg-[#00FF88]/10 px-1.5 py-px rounded">
                             PB
                           </span>
                         )}
                       </div>
-                      <span className="text-[#CCCCCC] text-xs">{ex.sets.length}セット</span>
+                      <span className="text-[#444] text-xs">{ex.sets.length}セット</span>
                     </div>
                   ))}
                 </div>
@@ -214,7 +214,7 @@ export default function WorkoutCalendar({ sessions }: Props) {
       )}
 
       {selectedDateStr && selectedSessions.length === 0 && (
-        <p className="text-center text-[#CCCCCC] text-sm mt-5 py-3">この日の記録なし</p>
+        <p className="text-center text-[#333] text-sm mt-5 py-3">この日の記録なし</p>
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import { getSessions, getPersonalBests } from '@/lib/storage';
 import { BODY_PART_LABELS, ExerciseType, PersonalBest, WorkoutSession, WorkoutSet } from '@/lib/types';
 import WorkoutCalendar from '../components/WorkoutCalendar';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
+import BottomNav from '../components/BottomNav';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -39,9 +40,9 @@ const BODY_COLORS: Record<string, string> = {
 };
 
 const TYPE_COLOR: Record<ExerciseType, string> = {
-  WEIGHT: 'bg-blue-50 text-blue-400 border-blue-100',
-  BODYWEIGHT: 'bg-purple-50 text-purple-400 border-purple-100',
-  CARDIO: 'bg-orange-50 text-orange-400 border-orange-100',
+  WEIGHT: 'bg-blue-900/40 text-blue-400 border-blue-800/50',
+  BODYWEIGHT: 'bg-purple-900/40 text-purple-400 border-purple-800/50',
+  CARDIO: 'bg-orange-900/40 text-orange-400 border-orange-800/50',
 };
 const TYPE_LABEL: Record<ExerciseType, string> = {
   WEIGHT: '重量', BODYWEIGHT: '自重', CARDIO: '有酸素',
@@ -50,12 +51,12 @@ const TYPE_LABEL: Record<ExerciseType, string> = {
 function Empty({ message }: { message: string }) {
   return (
     <div className="text-center py-24">
-      <div className="w-10 h-10 rounded-full border border-[#E8E8E8] flex items-center justify-center mx-auto mb-4 bg-white shadow-sm">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#CCCCCC" strokeWidth="1.5" strokeLinecap="round">
+      <div className="w-10 h-10 rounded-full border border-[#222] flex items-center justify-center mx-auto mb-4 bg-[#141414]">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#444" strokeWidth="1.5" strokeLinecap="round">
           <circle cx="8" cy="8" r="6" /><path d="M8 5v3M8 10v.5" />
         </svg>
       </div>
-      <p className="text-[#BBBBBB] text-sm">{message}</p>
+      <p className="text-[#555] text-sm">{message}</p>
     </div>
   );
 }
@@ -95,26 +96,26 @@ export default function HistoryPage() {
     });
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7] text-[#111] pb-16 max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-[#0A0A0A] text-white pb-24 max-w-[430px] mx-auto">
 
       <div className="px-6 pt-14 pb-6 animate-fadeInUp">
         <button onClick={() => router.back()}
-          className="flex items-center gap-2 text-[#BBBBBB] mb-8 active:text-[#111] transition-colors text-sm">
+          className="flex items-center gap-2 text-[#555] mb-8 active:text-white transition-colors text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M10 3L5 8l5 5" />
           </svg>
           戻る
         </button>
-        <h2 className="text-3xl font-black tracking-tight text-[#111]">記録</h2>
+        <h2 className="text-3xl font-black tracking-tight text-white">記録</h2>
       </div>
 
       {/* Tabs */}
       <div className="px-6 mb-6 animate-fadeInUp" style={{ animationDelay: '0.06s' }}>
-        <div className="flex bg-white border border-[#E8E8E8] rounded-xl p-1 gap-1 shadow-sm">
+        <div className="flex bg-[#141414] border border-[#222] rounded-xl p-1 gap-1">
           {TABS.map(({ key, label }) => (
             <button key={key} onClick={() => setTab(key)}
               className={`flex-1 py-2.5 rounded-lg font-bold text-xs transition-all ${
-                tab === key ? 'bg-[#00DD77] text-black shadow-sm' : 'text-[#AAAAAA] active:bg-[#F5F5F5]'
+                tab === key ? 'bg-[#00FF88] text-black shadow-sm' : 'text-[#555] active:bg-[#1F1F1F]'
               }`}>
               {label}
             </button>
@@ -132,7 +133,7 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {/* ── History (date-based detail view) ── */}
+      {/* ── History ── */}
       {tab === 'history' && (
         <div className="px-6 animate-fadeInUp">
           {sessions.length === 0 ? (
@@ -145,53 +146,46 @@ export default function HistoryPage() {
                 const color = BODY_COLORS[session.bodyPart] || '#888';
 
                 return (
-                  <div key={session.id} className="bg-white border border-[#EBEBEB] rounded-2xl overflow-hidden shadow-sm">
+                  <div key={session.id} className="bg-[#141414] border border-[#222] rounded-2xl overflow-hidden">
 
-                    {/* ── Date header row ── */}
                     <button
                       onClick={() => toggleExpand(session.id)}
-                      className="w-full px-5 py-4 flex items-center gap-3 active:bg-[#F9F9F9] transition-colors text-left"
+                      className="w-full px-5 py-4 flex items-center gap-3 active:bg-[#1A1A1A] transition-colors text-left"
                     >
-                      {/* Color stripe */}
                       <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
-
                       <div className="flex-1 min-w-0">
-                        <div className="font-black text-[#111] text-sm leading-tight">{fmtDate(session.date)}</div>
+                        <div className="font-black text-white text-sm leading-tight">{fmtDate(session.date)}</div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs font-bold" style={{ color }}>{BODY_PART_LABELS[session.bodyPart]}</span>
-                          <span className="text-[#CCCCCC] text-xs">·</span>
-                          <span className="text-xs text-[#AAAAAA]">{session.exercises.length}種目 / {totalSets}セット</span>
+                          <span className="text-[#333] text-xs">·</span>
+                          <span className="text-xs text-[#555]">{session.exercises.length}種目 / {totalSets}セット</span>
                           {session.durationSeconds > 0 && (
                             <>
-                              <span className="text-[#CCCCCC] text-xs">·</span>
-                              <span className="text-xs text-[#AAAAAA]">{formatDuration(session.durationSeconds)}</span>
+                              <span className="text-[#333] text-xs">·</span>
+                              <span className="text-xs text-[#555]">{formatDuration(session.durationSeconds)}</span>
                             </>
                           )}
                         </div>
                       </div>
-
-                      {/* Expand chevron */}
                       <svg
                         width="14" height="14" viewBox="0 0 14 14" fill="none"
-                        stroke="#CCCCCC" strokeWidth="1.5" strokeLinecap="round"
+                        stroke="#444" strokeWidth="1.5" strokeLinecap="round"
                         className={`shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                       >
                         <path d="M2 5l5 5 5-5" />
                       </svg>
                     </button>
 
-                    {/* ── Exercise detail (collapsible) ── */}
                     {isOpen && (
-                      <div className="border-t border-[#F5F5F5] px-5 py-4 space-y-5 animate-fadeInUp">
+                      <div className="border-t border-[#1F1F1F] px-5 py-4 space-y-5 animate-fadeInUp">
                         {session.exercises.map((ex, ei) => {
                           const type: ExerciseType = ex.exerciseType || 'WEIGHT';
                           return (
                             <div key={ei}>
-                              {/* Exercise header */}
                               <div className="flex items-center gap-2 mb-2.5">
-                                <span className="font-black text-[#111] text-sm flex-1">{ex.exerciseName}</span>
+                                <span className="font-black text-white text-sm flex-1">{ex.exerciseName}</span>
                                 {ex.isNewPB && (
-                                  <span className="text-[9px] text-[#00AA55] font-bold border border-[#00AA55]/25 bg-[#00AA55]/5 px-1.5 py-0.5 rounded">
+                                  <span className="text-[9px] text-[#00FF88] font-bold border border-[#00FF88]/25 bg-[#00FF88]/10 px-1.5 py-0.5 rounded">
                                     PB
                                   </span>
                                 )}
@@ -199,25 +193,21 @@ export default function HistoryPage() {
                                   {TYPE_LABEL[type]}
                                 </span>
                               </div>
-
-                              {/* Set chips */}
                               <div className="flex flex-wrap gap-1.5">
                                 {ex.sets.map((s, si) => (
                                   <span
                                     key={si}
-                                    className="text-xs bg-[#F7F7F7] border border-[#EBEBEB] px-2.5 py-1.5 rounded-xl text-[#555] font-medium"
+                                    className="text-xs bg-[#1A1A1A] border border-[#2A2A2A] px-2.5 py-1.5 rounded-xl text-[#888] font-medium"
                                   >
-                                    <span className="text-[#BBBBBB] mr-1">{si + 1}</span>
+                                    <span className="text-[#444] mr-1">{si + 1}</span>
                                     {formatSet(s, type)}
                                   </span>
                                 ))}
                               </div>
-
-                              {/* Memo */}
                               {ex.memo && (
                                 <div className="mt-2 flex items-start gap-1.5">
-                                  <span className="text-[#CCCCCC] text-xs mt-px">📝</span>
-                                  <p className="text-xs text-[#999] leading-relaxed">{ex.memo}</p>
+                                  <span className="text-[#444] text-xs mt-px">📝</span>
+                                  <p className="text-xs text-[#666] leading-relaxed">{ex.memo}</p>
                                 </div>
                               )}
                             </div>
@@ -225,7 +215,6 @@ export default function HistoryPage() {
                         })}
                       </div>
                     )}
-
                   </div>
                 );
               })}
@@ -243,16 +232,16 @@ export default function HistoryPage() {
             <div className="flex flex-col gap-3">
               {pbs.map((pb) => (
                 <div key={pb.exerciseId}
-                  className="bg-white border border-[#EBEBEB] rounded-2xl p-5 shadow-sm">
+                  className="bg-[#141414] border border-[#222] rounded-2xl p-5">
                   <div className="flex items-start justify-between mb-3">
-                    <span className="font-black text-[#111] flex-1 pr-2">{pb.exerciseName}</span>
+                    <span className="font-black text-white flex-1 pr-2">{pb.exerciseName}</span>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[#BBBBBB] text-xs mt-0.5">
+                      <span className="text-[#555] text-xs mt-0.5">
                         {new Date(pb.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                       </span>
                       <button
                         onClick={() => setChartEx({ id: pb.exerciseId, name: pb.exerciseName })}
-                        className="w-8 h-8 flex items-center justify-center rounded-full border border-[#E8E8E8] bg-[#F7F7F7] text-[#888] active:bg-[#EBEBEB] transition-colors"
+                        className="w-8 h-8 flex items-center justify-center rounded-full border border-[#2A2A2A] bg-[#1A1A1A] text-[#555] active:bg-[#222] transition-colors"
                         title="成長グラフ"
                       >
                         <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -262,16 +251,16 @@ export default function HistoryPage() {
                     </div>
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-[#3B82F6]">
+                    <span className="text-4xl font-black text-[#00FF88]">
                       {pb.weight % 1 === 0 ? pb.weight : pb.weight.toFixed(1)}
                     </span>
-                    <span className="text-[#AAAAAA] text-sm">kg</span>
-                    <span className="text-[#DDDDDD] text-xl font-light mx-2">×</span>
-                    <span className="text-4xl font-black text-[#3B82F6]">{pb.reps}</span>
-                    <span className="text-[#AAAAAA] text-sm">回</span>
+                    <span className="text-[#555] text-sm">kg</span>
+                    <span className="text-[#333] text-xl font-light mx-2">×</span>
+                    <span className="text-4xl font-black text-[#00FF88]">{pb.reps}</span>
+                    <span className="text-[#555] text-sm">回</span>
                   </div>
                   <div className="mt-2">
-                    <span className="text-xs text-[#00AA55] font-bold bg-[#00AA55]/10 px-2 py-0.5 rounded-full">
+                    <span className="text-xs text-[#00FF88] font-bold bg-[#00FF88]/10 border border-[#00FF88]/20 px-2 py-0.5 rounded-full">
                       1RM {pb.estimated1RM}kg
                     </span>
                   </div>
@@ -290,6 +279,8 @@ export default function HistoryPage() {
           onClose={() => setChartEx(null)}
         />
       )}
+
+      <BottomNav />
     </div>
   );
 }

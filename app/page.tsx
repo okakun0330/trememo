@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getWeeklyStats, getLastSession } from '@/lib/storage';
 import MuscleMouseMascot from './components/MuscleMouseMascot';
+import BottomNav from './components/BottomNav';
 
 const MASCOT_MESSAGES = [
   '今日も限界を超えろ！',
@@ -38,16 +39,17 @@ export default function HomePage() {
   const progressPct = Math.min(100, Math.round((weekly.count / weekly.goal) * 100));
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7] text-[#111] flex flex-col max-w-[430px] mx-auto px-5">
+    <div className="min-h-screen bg-[#0A0A0A] text-white flex flex-col max-w-[430px] mx-auto px-5 pb-24">
 
       {/* Header */}
       <div className="pt-14 pb-2 flex items-center justify-between animate-fadeInUp">
-        <h1 className="text-[2.8rem] font-black tracking-tight leading-none text-[#00DD77]">
+        <h1 className="text-[2.8rem] font-black tracking-tight leading-none text-[#00FF88]"
+          style={{ textShadow: '0 0 20px rgba(0,255,136,0.4)' }}>
           トレメモ
         </h1>
         <button
           onClick={() => router.push('/settings')}
-          className="w-10 h-10 flex items-center justify-center rounded-full border border-[#E8E8E8] text-[#BBBBBB] active:text-[#111] bg-white shadow-sm"
+          className="w-10 h-10 flex items-center justify-center rounded-full border border-[#2A2A2A] text-[#555] active:text-white bg-[#161616]"
           aria-label="設定"
         >
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -63,66 +65,72 @@ export default function HomePage() {
         style={{ animationDelay: '0.05s' }}
       >
         {/* Speech bubble */}
-        <div className="relative bg-white border border-[#E8E8E8] rounded-2xl px-4 py-2.5 mb-3 shadow-sm max-w-[220px]">
-          <p className="text-sm font-bold text-[#111] text-center leading-snug">{message}</p>
+        <div className="relative bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl px-4 py-2.5 mb-3 max-w-[220px]"
+          style={{ boxShadow: '0 0 12px rgba(0,255,136,0.08)' }}>
+          <p className="text-sm font-bold text-[#00FF88] text-center leading-snug">{message}</p>
           {/* tail */}
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0"
             style={{
               borderLeft: '7px solid transparent',
               borderRight: '7px solid transparent',
-              borderTop: '8px solid white',
-              filter: 'drop-shadow(0 1px 0 #E8E8E8)',
+              borderTop: '8px solid #1A1A1A',
             }}
           />
         </div>
-        <MuscleMouseMascot size={120} />
+        <div className="animate-float">
+          <MuscleMouseMascot size={120} />
+        </div>
       </div>
 
       {/* Weekly progress */}
       <div
-        className="bg-white border border-[#EBEBEB] rounded-2xl p-5 mb-4 shadow-sm animate-fadeInUp"
-        style={{ animationDelay: '0.10s' }}
+        className="bg-[#141414] border border-[#222] rounded-2xl p-5 mb-4 animate-fadeInUp"
+        style={{ animationDelay: '0.10s', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
       >
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] text-[#BBBBBB] uppercase tracking-widest">今週の達成</span>
-          <span className="text-[10px] text-[#CCCCCC]">目標 {weekly.goal}回</span>
+          <span className="text-[10px] text-[#555] uppercase tracking-widest">今週の達成</span>
+          <span className="text-[10px] text-[#444]">目標 {weekly.goal}回</span>
         </div>
         <div className="flex items-end gap-2 mb-3.5">
-          <span className="text-5xl font-black text-[#111] leading-none">{weekly.count}</span>
-          <span className="text-[#CCCCCC] text-2xl font-light mb-1">/ {weekly.goal}</span>
+          <span className="text-5xl font-black text-white leading-none">{weekly.count}</span>
+          <span className="text-[#444] text-2xl font-light mb-1">/ {weekly.goal}</span>
           {weekly.count >= weekly.goal && (
-            <span className="text-[#00AA55] text-xs font-bold mb-1 ml-auto">達成！🎉</span>
+            <span className="text-[#00FF88] text-xs font-bold mb-1 ml-auto animate-pulse-green px-2 py-0.5 rounded-full bg-[#00FF88]/10 border border-[#00FF88]/20">
+              達成！🎉
+            </span>
           )}
         </div>
-        <div className="h-1.5 bg-[#F0F0F0] rounded-full overflow-hidden">
+        <div className="h-1.5 bg-[#222] rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#00DD77] rounded-full transition-all duration-700"
-            style={{ width: `${progressPct}%` }}
+            className="h-full bg-[#00FF88] rounded-full transition-all duration-700"
+            style={{ width: `${progressPct}%`, boxShadow: '0 0 8px rgba(0,255,136,0.5)' }}
           />
         </div>
         {lastDate && (
-          <p className="text-[10px] text-[#CCCCCC] mt-3">前回：{lastDate}</p>
+          <p className="text-[10px] text-[#444] mt-3">前回：{lastDate}</p>
         )}
       </div>
 
       {/* CTA buttons */}
       <div
-        className="flex flex-col gap-3 pb-12 animate-fadeInUp"
+        className="flex flex-col gap-3 animate-fadeInUp"
         style={{ animationDelay: '0.15s' }}
       >
         <button
           onClick={() => router.push('/select')}
-          className="w-full py-5 rounded-2xl bg-[#00DD77] text-black font-black text-lg active:scale-[0.97] transition-transform shadow-sm"
+          className="w-full py-5 rounded-2xl bg-[#00FF88] text-black font-black text-lg active:scale-[0.97] transition-transform glow-btn"
         >
           今日のトレーニング開始 💪
         </button>
         <button
           onClick={() => router.push('/history')}
-          className="w-full py-5 rounded-2xl bg-white border border-[#E8E8E8] text-[#111] font-bold text-base active:scale-[0.97] transition-transform shadow-sm"
+          className="w-full py-5 rounded-2xl bg-[#161616] border border-[#2A2A2A] text-[#888] font-bold text-base active:scale-[0.97] transition-transform"
         >
           過去の記録を見る
         </button>
       </div>
+
+      <BottomNav />
     </div>
   );
 }

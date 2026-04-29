@@ -80,11 +80,11 @@ function NumInput({
 
   return (
     <div>
-      <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-2">{label}</p>
-      <div className="flex items-center gap-2 bg-white border border-[#EBEBEB] rounded-2xl px-3 py-2 shadow-sm">
+      <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">{label}</p>
+      <div className="flex items-center gap-2 bg-[#141414] border border-[#222] rounded-2xl px-3 py-2">
         <button
           onClick={() => adjust(-step)}
-          className="w-12 h-12 rounded-xl bg-[#F5F5F5] border border-[#E5E5E5] text-[#111] text-2xl font-black flex items-center justify-center active:bg-[#EBEBEB] transition-colors shrink-0"
+          className="w-12 h-12 rounded-xl bg-[#00FF88] text-black text-2xl font-black flex items-center justify-center active:opacity-80 transition-opacity shrink-0"
         >
           −
         </button>
@@ -102,13 +102,14 @@ function NumInput({
             }}
             onBlur={() => setInputVal(fmt(value))}
             /* w-28 = 7rem = 112px — wide enough for "100.0" at 5xl */
-            className="w-28 text-5xl font-black text-[#111] text-center bg-transparent outline-none"
+            className="w-28 text-5xl font-black text-[#00FF88] text-center bg-transparent outline-none"
+            style={{ textShadow: '0 0 12px rgba(0,255,136,0.4)' }}
           />
-          <span className="text-[#AAAAAA] text-sm shrink-0">{unit}</span>
+          <span className="text-[#555] text-sm shrink-0">{unit}</span>
         </div>
         <button
           onClick={() => adjust(step)}
-          className="w-12 h-12 rounded-xl bg-[#F5F5F5] border border-[#E5E5E5] text-[#111] text-2xl font-black flex items-center justify-center active:bg-[#EBEBEB] transition-colors shrink-0"
+          className="w-12 h-12 rounded-xl bg-[#00FF88] text-black text-2xl font-black flex items-center justify-center active:opacity-80 transition-opacity shrink-0"
         >
           ＋
         </button>
@@ -129,44 +130,44 @@ function CardioInput({
     <div className="flex flex-col gap-3">
       {/* Time row */}
       <div>
-        <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-2">時間</p>
+        <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">時間</p>
         <div className="flex gap-2">
-          <div className="flex items-center bg-white border border-[#EBEBEB] rounded-xl shadow-sm overflow-hidden flex-1">
+          <div className="flex items-center bg-[#141414] border border-[#222] rounded-xl overflow-hidden flex-1">
             <button onClick={() => onMinutes(Math.max(0, minutes - 1))}
-              className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">−</button>
+              className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
             <div className="flex-1 flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-black text-[#111] tabular-nums">{String(minutes).padStart(2, '0')}</span>
-              <span className="text-[#AAAAAA] text-sm">分</span>
+              <span className="text-4xl font-black text-[#00FF88] tabular-nums">{String(minutes).padStart(2, '0')}</span>
+              <span className="text-[#555] text-sm">分</span>
             </div>
             <button onClick={() => onMinutes(minutes + 1)}
-              className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">＋</button>
+              className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">＋</button>
           </div>
-          <div className="flex items-center bg-white border border-[#EBEBEB] rounded-xl shadow-sm overflow-hidden flex-1">
+          <div className="flex items-center bg-[#141414] border border-[#222] rounded-xl overflow-hidden flex-1">
             <button onClick={() => onSeconds(Math.max(0, seconds - 5))}
-              className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">−</button>
+              className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
             <div className="flex-1 flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-black text-[#111] tabular-nums">{String(seconds).padStart(2, '0')}</span>
-              <span className="text-[#AAAAAA] text-sm">秒</span>
+              <span className="text-4xl font-black text-[#00FF88] tabular-nums">{String(seconds).padStart(2, '0')}</span>
+              <span className="text-[#555] text-sm">秒</span>
             </div>
             <button onClick={() => onSeconds(Math.min(55, seconds + 5))}
-              className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">＋</button>
+              className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">＋</button>
           </div>
         </div>
       </div>
       {/* Distance (optional) */}
       <div>
-        <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-2">距離（任意）</p>
-        <div className="flex items-center bg-white border border-[#EBEBEB] rounded-xl shadow-sm overflow-hidden">
+        <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">距離（任意）</p>
+        <div className="flex items-center bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
           <button onClick={() => onKm(Math.max(0, Math.round((km - 0.1) * 10) / 10))}
-            className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">−</button>
+            className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
           <div className="flex-1 flex items-baseline justify-center gap-1">
-            <span className="text-4xl font-black text-[#111] tabular-nums">
+            <span className="text-4xl font-black text-[#00FF88] tabular-nums">
               {km === 0 ? '—' : (km % 1 === 0 ? km : km.toFixed(1))}
             </span>
-            <span className="text-[#AAAAAA] text-sm">km</span>
+            <span className="text-[#555] text-sm">km</span>
           </div>
           <button onClick={() => onKm(Math.round((km + 0.1) * 10) / 10)}
-            className="w-11 h-11 text-[#111] text-xl font-black flex items-center justify-center shrink-0 active:bg-[#F5F5F5] transition-colors">＋</button>
+            className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">＋</button>
         </div>
       </div>
     </div>
@@ -180,9 +181,9 @@ const TYPE_LABEL: Record<ExerciseType, string> = {
   CARDIO: '有酸素',
 };
 const TYPE_COLOR: Record<ExerciseType, string> = {
-  WEIGHT: 'bg-blue-50 text-blue-500 border-blue-100',
-  BODYWEIGHT: 'bg-purple-50 text-purple-500 border-purple-100',
-  CARDIO: 'bg-orange-50 text-orange-500 border-orange-100',
+  WEIGHT: 'bg-blue-900/40 text-blue-400 border-blue-800/50',
+  BODYWEIGHT: 'bg-purple-900/40 text-purple-400 border-purple-800/50',
+  CARDIO: 'bg-orange-900/40 text-orange-400 border-orange-800/50',
 };
 
 // ── Main session content ───────────────────────────────────────────────────────
@@ -369,12 +370,12 @@ function SessionContent() {
 
   /* ── RENDER ── */
   return (
-    <div className="min-h-screen bg-[#F7F7F7] text-[#111] max-w-[430px] mx-auto">
+    <div className="min-h-screen bg-[#0A0A0A] text-white max-w-[430px] mx-auto">
 
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-[#EBEBEB] px-6 py-4 flex items-center justify-between shadow-sm">
+      <div className="sticky top-0 z-10 bg-[#0D0D0D] border-b border-[#1F1F1F] px-6 py-4 flex items-center justify-between">
         <button onClick={() => router.replace('/')}
-          className="flex items-center gap-2 text-[#BBBBBB] active:text-[#111] transition-colors text-sm">
+          className="flex items-center gap-2 text-[#555] active:text-white transition-colors text-sm">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M10 3L5 8l5 5" />
           </svg>
@@ -382,13 +383,14 @@ function SessionContent() {
         </button>
         <div className="flex items-center gap-4">
           <div className="text-center">
-            <div className="text-xl font-black text-[#111] tabular-nums">{timer}</div>
-            <div className="text-[9px] text-[#BBBBBB] uppercase tracking-widest">経過時間</div>
+            <div className="text-xl font-black text-white tabular-nums">{timer}</div>
+            <div className="text-[9px] text-[#444] uppercase tracking-widest">経過時間</div>
           </div>
-          <div className="w-px h-8 bg-[#EBEBEB]" />
+          <div className="w-px h-8 bg-[#222]" />
           <div className="text-center">
-            <div className="text-xl font-black text-[#00BB66] tabular-nums">{todaySetCount}</div>
-            <div className="text-[9px] text-[#BBBBBB] uppercase tracking-widest">今日のセット</div>
+            <div className="text-xl font-black text-[#00FF88] tabular-nums"
+              style={{ textShadow: '0 0 10px rgba(0,255,136,0.5)' }}>{todaySetCount}</div>
+            <div className="text-[9px] text-[#444] uppercase tracking-widest">今日のセット</div>
           </div>
         </div>
       </div>
@@ -396,10 +398,10 @@ function SessionContent() {
       {/* Completed exercises chips */}
       {completedExercises.length > 0 && (
         <div className="px-6 pt-4 animate-fadeInUp">
-          <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">完了済み</p>
+          <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">完了済み</p>
           <div className="flex flex-wrap gap-2 mb-1">
             {completedExercises.map((ex, i) => (
-              <span key={i} className="text-xs text-[#777] bg-white border border-[#EBEBEB] px-3 py-1 rounded-full shadow-sm">
+              <span key={i} className="text-xs text-[#00FF88] bg-[#00FF88]/10 border border-[#00FF88]/20 px-3 py-1 rounded-full">
                 {ex.exerciseName} × {ex.sets.length}
               </span>
             ))}
@@ -412,14 +414,14 @@ function SessionContent() {
         <div className="px-6 pt-5 pb-32 animate-fadeInUp">
           {/* Body part chips */}
           <div className="mb-6">
-            <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">部位</p>
+            <p className="text-[10px] text-[#444] uppercase tracking-widest mb-3">部位</p>
             <div className="flex flex-wrap gap-2">
               {ALL_BODY_PARTS.map((bp) => (
                 <button key={bp} onClick={() => setCurrentBodyPart(bp)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                     currentBodyPart === bp
-                      ? 'bg-[#00DD77] text-black shadow-sm'
-                      : 'bg-white border border-[#E8E8E8] text-[#777] active:bg-[#F0F0F0]'
+                      ? 'bg-[#00FF88] text-black'
+                      : 'bg-[#1A1A1A] border border-[#2A2A2A] text-[#666] active:bg-[#222]'
                   }`}>
                   {BODY_PART_LABELS[bp]}
                 </button>
@@ -427,21 +429,21 @@ function SessionContent() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-black text-[#111] mb-5">種目を選ぶ</h2>
+          <h2 className="text-2xl font-black text-white mb-5">種目を選ぶ</h2>
 
           {historyExercises.length > 0 && (
             <div className="mb-6">
-              <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">過去の種目</p>
+              <p className="text-[10px] text-[#444] uppercase tracking-widest mb-3">過去の種目</p>
               <div className="flex flex-col gap-2">
                 {historyExercises.map((ex) => (
                   <button key={ex.id} onClick={() => selectExercise(ex)}
-                    className="bg-white border border-[#EBEBEB] rounded-xl px-4 py-3.5 flex items-center justify-between active:bg-[#F5F5F5] transition-colors shadow-sm">
-                    <span className="font-bold text-[#111]">{ex.name}</span>
+                    className="bg-[#141414] border border-[#222] rounded-xl px-4 py-3.5 flex items-center justify-between active:bg-[#1A1A1A] transition-colors">
+                    <span className="font-bold text-white">{ex.name}</span>
                     <div className="flex items-center gap-2">
                       <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${TYPE_COLOR[ex.exerciseType || 'WEIGHT']}`}>
                         {TYPE_LABEL[ex.exerciseType || 'WEIGHT']}
                       </span>
-                      <span className="text-[#CCCCCC] text-xs">{ex.usageCount}回</span>
+                      <span className="text-[#444] text-xs">{ex.usageCount}回</span>
                     </div>
                   </button>
                 ))}
@@ -450,7 +452,7 @@ function SessionContent() {
           )}
 
           <div>
-            <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-3">
+            <p className="text-[10px] text-[#444] uppercase tracking-widest mb-3">
               {historyExercises.length > 0 ? '新しく入力' : '種目名を入力'}
             </p>
             <input
@@ -458,17 +460,17 @@ function SessionContent() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && startNewExercise(inputValue)}
               placeholder="例：ベンチプレス / ランニング"
-              className="w-full bg-white border border-[#EBEBEB] text-[#111] text-lg px-4 py-4 rounded-xl outline-none focus:border-[#00DD77] placeholder-[#CCCCCC] mb-3 shadow-sm transition-colors"
+              className="w-full bg-[#141414] border border-[#222] text-white text-lg px-4 py-4 rounded-xl outline-none focus:border-[#00FF88] placeholder-[#333] mb-3 transition-colors"
             />
             <button onClick={() => startNewExercise(inputValue)} disabled={!inputValue.trim()}
-              className="w-full py-4 rounded-xl bg-[#00DD77] text-black font-black text-base active:scale-[0.97] transition-transform disabled:opacity-30 disabled:active:scale-100">
+              className="w-full py-4 rounded-xl bg-[#00FF88] text-black font-black text-base active:scale-[0.97] transition-transform disabled:opacity-30 disabled:active:scale-100 glow-btn">
               この種目で記録開始
             </button>
           </div>
 
           {completedExercises.length > 0 && (
             <button onClick={finishTraining}
-              className="w-full mt-4 py-4 rounded-xl border border-[#E8E8E8] bg-white text-[#777] font-bold text-base active:text-[#111] transition-colors shadow-sm">
+              className="w-full mt-4 py-4 rounded-xl border border-[#2A2A2A] bg-[#161616] text-[#666] font-bold text-base active:text-white transition-colors">
               トレーニングを終了する
             </button>
           )}
@@ -481,18 +483,18 @@ function SessionContent() {
 
           {/* Exercise name header */}
           <div className="flex items-center gap-2 mb-5">
-            <h2 className="text-2xl font-black text-[#111] flex-1 leading-tight">
+            <h2 className="text-2xl font-black text-white flex-1 leading-tight">
               {currentExercise.name}
             </h2>
             <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded shrink-0 ${TYPE_COLOR[exerciseType]}`}>
               {TYPE_LABEL[exerciseType]}
             </span>
-            <span className="text-xs text-[#888] bg-white border border-[#EBEBEB] px-2 py-1 rounded-full shadow-sm shrink-0">
+            <span className="text-xs text-[#555] bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-1 rounded-full shrink-0">
               {BODY_PART_LABELS[currentBodyPart]}
             </span>
             {exerciseType === 'WEIGHT' && (
               <button onClick={() => setShowChart(true)} title="成長グラフ"
-                className="w-9 h-9 flex items-center justify-center rounded-full border border-[#EBEBEB] bg-white text-[#888] active:bg-[#F0F0F0] transition-colors shadow-sm shrink-0">
+                className="w-9 h-9 flex items-center justify-center rounded-full border border-[#2A2A2A] bg-[#1A1A1A] text-[#555] active:bg-[#222] transition-colors shrink-0">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="1,11 4,7 7,9 10,4 13,6" />
                 </svg>
@@ -502,19 +504,19 @@ function SessionContent() {
 
           {/* Previous MAX (WEIGHT only) */}
           {lastMax && exerciseType === 'WEIGHT' && (
-            <div className="bg-white border border-[#EBEBEB] rounded-2xl p-4 mb-4 shadow-sm">
-              <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">
+            <div className="bg-[#141414] border border-[#222] rounded-2xl p-4 mb-4">
+              <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">
                 前回MAX（{new Date(lastRecord!.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}）
               </p>
               <div className="flex items-baseline gap-1 flex-wrap">
-                <span className="text-3xl font-black text-[#3B82F6]">
+                <span className="text-3xl font-black text-[#60a5fa]">
                   {lastMax.weight % 1 === 0 ? lastMax.weight : lastMax.weight.toFixed(1)}
                 </span>
-                <span className="text-[#AAAAAA] text-sm">kg</span>
-                <span className="text-[#DDDDDD] text-xl font-light mx-1">×</span>
-                <span className="text-3xl font-black text-[#3B82F6]">{lastMax.reps}</span>
-                <span className="text-[#AAAAAA] text-sm">回</span>
-                <span className="text-xs font-bold text-[#00AA55] ml-2 bg-[#00AA55]/10 px-2 py-0.5 rounded-full">
+                <span className="text-[#555] text-sm">kg</span>
+                <span className="text-[#333] text-xl font-light mx-1">×</span>
+                <span className="text-3xl font-black text-[#60a5fa]">{lastMax.reps}</span>
+                <span className="text-[#555] text-sm">回</span>
+                <span className="text-xs font-bold text-[#00FF88] ml-2 bg-[#00FF88]/10 border border-[#00FF88]/20 px-2 py-0.5 rounded-full">
                   1RM {calculateEstimated1RM(lastMax.weight, lastMax.reps)}kg
                 </span>
               </div>
@@ -525,8 +527,8 @@ function SessionContent() {
           {pbNotice && (
             <div className={`rounded-xl px-4 py-3 mb-4 text-center font-bold text-sm ${
               pbNotice.type === 'ok'
-                ? 'bg-[#00DD77]/15 border border-[#00DD77]/30 text-[#009944]'
-                : 'bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#3B82F6]'
+                ? 'bg-[#00FF88]/10 border border-[#00FF88]/25 text-[#00FF88]'
+                : 'bg-blue-900/30 border border-blue-800/40 text-[#60a5fa]'
             }`}>
               {pbNotice.text}
             </div>
@@ -553,77 +555,77 @@ function SessionContent() {
 
           {/* Complete button */}
           <button onClick={handleSetComplete}
-            className="w-full py-4 rounded-xl bg-[#00DD77] text-black font-black text-base active:scale-[0.97] transition-transform mb-5 shadow-sm">
+            className="w-full py-4 rounded-xl bg-[#00FF88] text-black font-black text-base active:scale-[0.97] transition-transform mb-5 glow-btn">
             {exerciseType === 'CARDIO' ? '記録する' : 'セット完了'}
           </button>
 
           {/* Sets list */}
           {currentSets.length > 0 && (
             <div className="mb-5">
-              <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">
+              <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">
                 このメニューの記録
               </p>
               <div className="flex flex-col gap-2">
                 {currentSets.map((s, i) =>
                   editIndex === i && exerciseType === 'WEIGHT' ? (
                     /* Inline edit (WEIGHT only) */
-                    <div key={i} className="bg-white border border-[#00DD77]/40 rounded-xl p-4 shadow-sm animate-scaleIn">
-                      <p className="text-[10px] text-[#AAAAAA] uppercase tracking-widest mb-3">Set {i + 1} を編集</p>
+                    <div key={i} className="bg-[#141414] border border-[#00FF88]/25 rounded-xl p-4 animate-scaleIn">
+                      <p className="text-[10px] text-[#555] uppercase tracking-widest mb-3">Set {i + 1} を編集</p>
                       <div className="flex gap-3 mb-3">
                         <div className="flex-1">
-                          <p className="text-[10px] text-[#BBBBBB] mb-1.5">重量 (kg)</p>
-                          <div className="flex items-center bg-[#F7F7F7] border border-[#E5E5E5] rounded-lg overflow-hidden">
+                          <p className="text-[10px] text-[#444] mb-1.5">重量 (kg)</p>
+                          <div className="flex items-center bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg overflow-hidden">
                             <button onClick={() => setEditWeight((w) => Math.max(0, Math.round((w - 2.5) * 10) / 10))}
-                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors">−</button>
+                              className="w-9 h-9 bg-[#00FF88] text-black font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
                             <input type="text" inputMode="decimal"
                               value={editWeight % 1 === 0 ? String(editWeight) : editWeight.toFixed(1)}
                               onChange={(e) => { const n = parseFloat(e.target.value); if (!isNaN(n) && n >= 0) setEditWeight(n); }}
-                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#111]" />
+                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#00FF88]" />
                             <button onClick={() => setEditWeight((w) => Math.round((w + 2.5) * 10) / 10)}
-                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors">＋</button>
+                              className="w-9 h-9 bg-[#00FF88] text-black font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">＋</button>
                           </div>
                         </div>
                         <div className="flex-1">
-                          <p className="text-[10px] text-[#BBBBBB] mb-1.5">回数</p>
-                          <div className="flex items-center bg-[#F7F7F7] border border-[#E5E5E5] rounded-lg overflow-hidden">
+                          <p className="text-[10px] text-[#444] mb-1.5">回数</p>
+                          <div className="flex items-center bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg overflow-hidden">
                             <button onClick={() => setEditReps((r) => Math.max(1, r - 1))}
-                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors">−</button>
+                              className="w-9 h-9 bg-[#00FF88] text-black font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
                             <input type="text" inputMode="numeric"
                               value={String(editReps)}
                               onChange={(e) => { const n = parseInt(e.target.value, 10); if (!isNaN(n) && n > 0) setEditReps(n); }}
-                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#111]" />
+                              className="flex-1 text-center text-base font-black bg-transparent outline-none text-[#00FF88]" />
                             <button onClick={() => setEditReps((r) => r + 1)}
-                              className="w-9 h-9 text-[#111] font-black flex items-center justify-center shrink-0 active:bg-[#EBEBEB] transition-colors">＋</button>
+                              className="w-9 h-9 bg-[#00FF88] text-black font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">＋</button>
                           </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => saveEditSet(i)}
-                          className="flex-1 py-2.5 rounded-lg bg-[#00DD77] text-black font-bold text-sm active:scale-[0.97] transition-transform">保存</button>
+                          className="flex-1 py-2.5 rounded-lg bg-[#00FF88] text-black font-bold text-sm active:scale-[0.97] transition-transform">保存</button>
                         <button onClick={() => setEditIndex(null)}
-                          className="flex-1 py-2.5 rounded-lg border border-[#EBEBEB] text-[#777] font-bold text-sm active:bg-[#F5F5F5] transition-colors">キャンセル</button>
+                          className="flex-1 py-2.5 rounded-lg border border-[#2A2A2A] text-[#666] font-bold text-sm active:bg-[#1A1A1A] transition-colors">キャンセル</button>
                       </div>
                     </div>
                   ) : (
                     /* Normal row */
-                    <div key={i} className="bg-white border border-[#EBEBEB] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
-                      <span className="text-[#BBBBBB] text-sm font-medium w-12 shrink-0">
+                    <div key={i} className="bg-[#141414] border border-[#222] rounded-xl px-4 py-3 flex items-center gap-3">
+                      <span className="text-[#444] text-sm font-medium w-12 shrink-0">
                         {exerciseType === 'CARDIO' ? `#${i + 1}` : `Set ${i + 1}`}
                       </span>
-                      <span className="font-bold text-[#111] flex-1 text-sm">
+                      <span className="font-bold text-white flex-1 text-sm">
                         {formatSetDisplay(s, exerciseType)}
                       </span>
                       <div className="flex gap-1.5">
                         {exerciseType === 'WEIGHT' && (
                           <button onClick={() => startEditSet(i)}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#F5F5F5] border border-[#E8E8E8] text-[#888] active:bg-[#EBEBEB] transition-colors">
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-[#666] active:bg-[#222] transition-colors">
                             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z" />
                             </svg>
                           </button>
                         )}
                         <button onClick={() => deleteSet(i)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 border border-red-100 text-red-400 active:bg-red-100 transition-colors">
+                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-900/30 border border-red-800/40 text-red-400 active:bg-red-900/50 transition-colors">
                           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                             <path d="M2 2l8 8M10 2l-8 8" />
                           </svg>
@@ -638,12 +640,12 @@ function SessionContent() {
 
           {/* Memo */}
           <div className="mb-5">
-            <p className="text-[10px] text-[#BBBBBB] uppercase tracking-widest mb-2">メモ（任意）</p>
+            <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">メモ（任意）</p>
             <textarea
               value={memo} onChange={(e) => setMemo(e.target.value)}
               placeholder="気づいたこと・体調・フォームのポイントなど…"
               rows={3}
-              className="w-full bg-white border border-[#EBEBEB] text-[#111] text-sm px-4 py-3 rounded-xl outline-none focus:border-[#00DD77] placeholder-[#CCCCCC] resize-none shadow-sm transition-colors"
+              className="w-full bg-[#141414] border border-[#222] text-white text-sm px-4 py-3 rounded-xl outline-none focus:border-[#00FF88] placeholder-[#333] resize-none transition-colors"
             />
           </div>
         </div>
@@ -651,14 +653,15 @@ function SessionContent() {
 
       {/* Bottom bar (recording phase) */}
       {phase === 'recording' && (
-        <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto px-6 pb-10 pt-5 bg-gradient-to-t from-white via-white/95 to-transparent">
+        <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto px-6 pb-10 pt-5"
+          style={{ background: 'linear-gradient(to top, #0A0A0A 80%, transparent)' }}>
           <div className="flex gap-3">
             <button onClick={goToNextMenu}
-              className="flex-1 py-4 rounded-xl bg-[#111] text-white font-bold text-base active:scale-[0.97] transition-transform">
+              className="flex-1 py-4 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] text-white font-bold text-base active:scale-[0.97] transition-transform">
               次のメニュー
             </button>
             <button onClick={finishTraining}
-              className="flex-1 py-4 rounded-xl border border-[#E8E8E8] bg-white text-[#777] font-bold text-base active:text-[#111] transition-colors shadow-sm">
+              className="flex-1 py-4 rounded-xl border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] font-bold text-base active:scale-[0.97] transition-transform">
               終了
             </button>
           </div>
@@ -679,7 +682,7 @@ function SessionContent() {
 
 export default function SessionPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F7F7F7]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0A0A0A]" />}>
       <SessionContent />
     </Suspense>
   );
