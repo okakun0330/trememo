@@ -14,6 +14,7 @@ import {
   saveSession,
   getTodaySavedSets,
   classifyExercise,
+  saveLastSessionSummary,
 } from '@/lib/storage';
 import {
   BODY_PART_LABELS, BodyPart, Exercise, ExerciseRecord,
@@ -81,7 +82,7 @@ function NumInput({
 
   return (
     <div>
-      <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">{label}</p>
+      <p className="text-[10px] text-white/50 uppercase tracking-widest mb-2">{label}</p>
       <div className="flex items-center gap-2 bg-[#141414] border border-[#222] rounded-2xl px-3 py-2">
         <button
           onClick={() => adjust(-step)}
@@ -106,7 +107,7 @@ function NumInput({
             className="w-28 text-5xl font-black text-[#00FF88] text-center bg-transparent outline-none"
             style={{ textShadow: '0 0 12px rgba(0,255,136,0.4)' }}
           />
-          <span className="text-[#555] text-sm shrink-0">{unit}</span>
+          <span className="text-white/50 text-sm shrink-0">{unit}</span>
         </div>
         <button
           onClick={() => adjust(step)}
@@ -131,14 +132,14 @@ function CardioInput({
     <div className="flex flex-col gap-3">
       {/* Time row */}
       <div>
-        <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">時間</p>
+        <p className="text-[10px] text-white/50 uppercase tracking-widest mb-2">時間</p>
         <div className="flex gap-2">
           <div className="flex items-center bg-[#141414] border border-[#222] rounded-xl overflow-hidden flex-1">
             <button onClick={() => onMinutes(Math.max(0, minutes - 1))}
               className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
             <div className="flex-1 flex items-baseline justify-center gap-1">
               <span className="text-4xl font-black text-[#00FF88] tabular-nums">{String(minutes).padStart(2, '0')}</span>
-              <span className="text-[#555] text-sm">分</span>
+              <span className="text-white/50 text-sm">分</span>
             </div>
             <button onClick={() => onMinutes(minutes + 1)}
               className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">＋</button>
@@ -148,7 +149,7 @@ function CardioInput({
               className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
             <div className="flex-1 flex items-baseline justify-center gap-1">
               <span className="text-4xl font-black text-[#00FF88] tabular-nums">{String(seconds).padStart(2, '0')}</span>
-              <span className="text-[#555] text-sm">秒</span>
+              <span className="text-white/50 text-sm">秒</span>
             </div>
             <button onClick={() => onSeconds(Math.min(55, seconds + 5))}
               className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">＋</button>
@@ -157,7 +158,7 @@ function CardioInput({
       </div>
       {/* Distance (optional) */}
       <div>
-        <p className="text-[10px] text-[#555] uppercase tracking-widest mb-2">距離（任意）</p>
+        <p className="text-[10px] text-white/50 uppercase tracking-widest mb-2">距離（任意）</p>
         <div className="flex items-center bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
           <button onClick={() => onKm(Math.max(0, Math.round((km - 0.1) * 10) / 10))}
             className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
@@ -165,7 +166,7 @@ function CardioInput({
             <span className="text-4xl font-black text-[#00FF88] tabular-nums">
               {km === 0 ? '—' : (km % 1 === 0 ? km : km.toFixed(1))}
             </span>
-            <span className="text-[#555] text-sm">km</span>
+            <span className="text-white/50 text-sm">km</span>
           </div>
           <button onClick={() => onKm(Math.round((km + 0.1) * 10) / 10)}
             className="w-11 h-11 bg-[#00FF88] text-black text-xl font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">＋</button>
@@ -358,6 +359,25 @@ function SessionContent() {
       ? Math.floor((Date.now() - new Date(sess.startTime).getTime()) / 1000) : 0;
     if (sess) {
       saveSession({ id: sess.id, date: new Date().toISOString(), bodyPart: initBodyPart, exercises: all, durationSeconds: duration });
+      // Build and save session summary for complete page
+      const hasPB = all.some((e) => e.isNewPB);
+      const summaryExercises = all.map((e) => {
+        const maxSet = e.sets.length > 0 ? e.sets.reduce((b, s) =>
+          calculateEstimated1RM(s.weight, s.reps) > calculateEstimated1RM(b.weight, b.reps) ? s : b
+        ) : null;
+        let setsLabel = '';
+        if (e.exerciseType === 'CARDIO') {
+          setsLabel = `${e.sets.length}セット`;
+        } else if (e.exerciseType === 'BODYWEIGHT') {
+          const avgReps = e.sets.length > 0 ? Math.round(e.sets.reduce((t, s) => t + s.reps, 0) / e.sets.length) : 0;
+          setsLabel = `${avgReps}回（${e.sets.length}セット）`;
+        } else if (maxSet) {
+          const w = maxSet.weight % 1 === 0 ? String(maxSet.weight) : maxSet.weight.toFixed(1);
+          setsLabel = `${w}kg × ${maxSet.reps}回（${e.sets.length}セット）`;
+        }
+        return { name: e.exerciseName, bodyPart: e.bodyPart, setsLabel, isNewPB: e.isNewPB };
+      });
+      saveLastSessionSummary({ bodyPart: initBodyPart, exercises: summaryExercises, hasPB });
       setCurrentSession(null);
     }
     const total = all.reduce((t, e) => t + e.sets.length, 0);
@@ -377,7 +397,7 @@ function SessionContent() {
       <div className="sticky top-0 z-10 bg-[#0D0D0D] border-b border-[#1F1F1F] px-5 py-3">
         <div className="flex items-center gap-3">
           <button onClick={() => router.replace('/')}
-            className="flex items-center gap-1.5 text-[#555] active:text-white transition-colors text-sm shrink-0">
+            className="flex items-center gap-1.5 text-white/50 active:text-white transition-colors text-sm shrink-0">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M9 2L4 7l5 5"/>
             </svg>
@@ -386,13 +406,13 @@ function SessionContent() {
           <div className="flex-1 flex items-center justify-center gap-4">
             <div className="text-center">
               <div className="text-2xl font-black text-white tabular-nums leading-tight">{timer}</div>
-              <div className="text-[9px] text-[#333] uppercase tracking-widest">経過時間</div>
+              <div className="text-[9px] text-white/30 uppercase tracking-widest">経過時間</div>
             </div>
             <div className="w-px h-8 bg-[#222]"/>
             <div className="text-center">
               <div className="text-2xl font-black text-[#00FF88] tabular-nums leading-tight"
                 style={{ textShadow: '0 0 10px rgba(0,255,136,0.5)' }}>{todaySetCount}</div>
-              <div className="text-[9px] text-[#333] uppercase tracking-widest">今日のセット</div>
+              <div className="text-[9px] text-white/30 uppercase tracking-widest">今日のセット</div>
             </div>
           </div>
         </div>
@@ -401,7 +421,7 @@ function SessionContent() {
       {/* Completed exercises chips */}
       {completedExercises.length > 0 && (
         <div className="px-6 pt-4 animate-fadeInUp">
-          <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">完了済み</p>
+          <p className="text-[10px] text-white/40 uppercase tracking-widest mb-2">完了済み</p>
           <div className="flex flex-wrap gap-2 mb-1">
             {completedExercises.map((ex, i) => (
               <span key={i} className="text-xs text-[#00FF88] bg-[#00FF88]/10 border border-[#00FF88]/20 px-3 py-1 rounded-full">
@@ -417,14 +437,14 @@ function SessionContent() {
         <div className="px-6 pt-5 pb-32 animate-fadeInUp">
           {/* Body part chips */}
           <div className="mb-6">
-            <p className="text-[10px] text-[#444] uppercase tracking-widest mb-3">部位</p>
+            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-3">部位</p>
             <div className="flex flex-wrap gap-2">
               {ALL_BODY_PARTS.map((bp) => (
                 <button key={bp} onClick={() => setCurrentBodyPart(bp)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                     currentBodyPart === bp
                       ? 'bg-[#00FF88] text-black'
-                      : 'bg-[#1A1A1A] border border-[#2A2A2A] text-[#666] active:bg-[#222]'
+                      : 'bg-[#1A1A1A] border border-[#2A2A2A] text-white/60 active:bg-[#222]'
                   }`}>
                   {BODY_PART_LABELS[bp]}
                 </button>
@@ -436,7 +456,7 @@ function SessionContent() {
 
           {historyExercises.length > 0 && (
             <div className="mb-6">
-              <p className="text-[10px] text-[#444] uppercase tracking-widest mb-3">過去の種目</p>
+              <p className="text-[10px] text-white/40 uppercase tracking-widest mb-3">過去の種目</p>
               <div className="flex flex-col gap-2">
                 {historyExercises.map((ex) => (
                   <button key={ex.id} onClick={() => selectExercise(ex)}
@@ -446,7 +466,7 @@ function SessionContent() {
                       <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${TYPE_COLOR[ex.exerciseType || 'WEIGHT']}`}>
                         {TYPE_LABEL[ex.exerciseType || 'WEIGHT']}
                       </span>
-                      <span className="text-[#444] text-xs">{ex.usageCount}回</span>
+                      <span className="text-white/40 text-xs">{ex.usageCount}回</span>
                     </div>
                   </button>
                 ))}
@@ -455,7 +475,7 @@ function SessionContent() {
           )}
 
           <div>
-            <p className="text-[10px] text-[#444] uppercase tracking-widest mb-3">
+            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-3">
               {historyExercises.length > 0 ? '新しく入力' : '種目名を入力'}
             </p>
             <input
@@ -473,7 +493,7 @@ function SessionContent() {
 
           {completedExercises.length > 0 && (
             <button onClick={finishTraining}
-              className="w-full mt-4 py-4 rounded-xl border border-[#2A2A2A] bg-[#161616] text-[#666] font-bold text-base active:text-white transition-colors">
+              className="w-full mt-4 py-4 rounded-xl border border-[#2A2A2A] bg-[#161616] text-white/60 font-bold text-base active:text-white transition-colors">
               トレーニングを終了する
             </button>
           )}
@@ -491,7 +511,7 @@ function SessionContent() {
                 <span className={`text-[9px] font-bold border px-1.5 py-0.5 rounded ${TYPE_COLOR[exerciseType]}`}>
                   {TYPE_LABEL[exerciseType]}
                 </span>
-                <span className="text-xs text-[#555] bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-0.5 rounded-full">
+                <span className="text-xs text-white/50 bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-0.5 rounded-full">
                   {BODY_PART_LABELS[currentBodyPart]}
                 </span>
                 {exerciseType === 'WEIGHT' && (
@@ -520,17 +540,17 @@ function SessionContent() {
           {/* Previous MAX (WEIGHT only) */}
           {lastMax && exerciseType === 'WEIGHT' && (
             <div className="bg-[#141414] border border-[#222] rounded-2xl p-4 mb-4">
-              <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest mb-2">
                 前回MAX（{new Date(lastRecord!.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}）
               </p>
               <div className="flex items-baseline gap-1 flex-wrap">
                 <span className="text-3xl font-black text-[#60a5fa]">
                   {lastMax.weight % 1 === 0 ? lastMax.weight : lastMax.weight.toFixed(1)}
                 </span>
-                <span className="text-[#555] text-sm">kg</span>
-                <span className="text-[#333] text-xl font-light mx-1">×</span>
+                <span className="text-white/50 text-sm">kg</span>
+                <span className="text-white/20 text-xl font-light mx-1">×</span>
                 <span className="text-3xl font-black text-[#60a5fa]">{lastMax.reps}</span>
-                <span className="text-[#555] text-sm">回</span>
+                <span className="text-white/50 text-sm">回</span>
                 <span className="text-xs font-bold text-[#00FF88] ml-2 bg-[#00FF88]/10 border border-[#00FF88]/20 px-2 py-0.5 rounded-full">
                   1RM {calculateEstimated1RM(lastMax.weight, lastMax.reps)}kg
                 </span>
@@ -577,7 +597,7 @@ function SessionContent() {
           {/* Sets list */}
           {currentSets.length > 0 && (
             <div className="mb-5">
-              <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest mb-2">
                 このメニューの記録
               </p>
               <div className="flex flex-col gap-2">
@@ -585,10 +605,10 @@ function SessionContent() {
                   editIndex === i && exerciseType === 'WEIGHT' ? (
                     /* Inline edit (WEIGHT only) */
                     <div key={i} className="bg-[#141414] border border-[#00FF88]/25 rounded-xl p-4 animate-scaleIn">
-                      <p className="text-[10px] text-[#555] uppercase tracking-widest mb-3">Set {i + 1} を編集</p>
+                      <p className="text-[10px] text-white/50 uppercase tracking-widest mb-3">Set {i + 1} を編集</p>
                       <div className="flex gap-3 mb-3">
                         <div className="flex-1">
-                          <p className="text-[10px] text-[#444] mb-1.5">重量 (kg)</p>
+                          <p className="text-[10px] text-white/40 mb-1.5">重量 (kg)</p>
                           <div className="flex items-center bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg overflow-hidden">
                             <button onClick={() => setEditWeight((w) => Math.max(0, Math.round((w - 2.5) * 10) / 10))}
                               className="w-9 h-9 bg-[#00FF88] text-black font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
@@ -601,7 +621,7 @@ function SessionContent() {
                           </div>
                         </div>
                         <div className="flex-1">
-                          <p className="text-[10px] text-[#444] mb-1.5">回数</p>
+                          <p className="text-[10px] text-white/40 mb-1.5">回数</p>
                           <div className="flex items-center bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg overflow-hidden">
                             <button onClick={() => setEditReps((r) => Math.max(1, r - 1))}
                               className="w-9 h-9 bg-[#00FF88] text-black font-black flex items-center justify-center shrink-0 active:opacity-80 transition-opacity">−</button>
@@ -618,13 +638,13 @@ function SessionContent() {
                         <button onClick={() => saveEditSet(i)}
                           className="flex-1 py-2.5 rounded-lg bg-[#00FF88] text-black font-bold text-sm active:scale-[0.97] transition-transform">保存</button>
                         <button onClick={() => setEditIndex(null)}
-                          className="flex-1 py-2.5 rounded-lg border border-[#2A2A2A] text-[#666] font-bold text-sm active:bg-[#1A1A1A] transition-colors">キャンセル</button>
+                          className="flex-1 py-2.5 rounded-lg border border-[#2A2A2A] text-white/60 font-bold text-sm active:bg-[#1A1A1A] transition-colors">キャンセル</button>
                       </div>
                     </div>
                   ) : (
                     /* Normal row */
                     <div key={i} className="bg-[#141414] border border-[#222] rounded-xl px-4 py-3 flex items-center gap-3">
-                      <span className="text-[#444] text-sm font-medium w-12 shrink-0">
+                      <span className="text-white/40 text-sm font-medium w-12 shrink-0">
                         {exerciseType === 'CARDIO' ? `#${i + 1}` : `Set ${i + 1}`}
                       </span>
                       <span className="font-bold text-white flex-1 text-sm">
@@ -655,7 +675,7 @@ function SessionContent() {
 
           {/* Memo */}
           <div className="mb-5">
-            <p className="text-[10px] text-[#444] uppercase tracking-widest mb-2">メモ（任意）</p>
+            <p className="text-[10px] text-white/40 uppercase tracking-widest mb-2">メモ（任意）</p>
             <textarea
               value={memo} onChange={(e) => setMemo(e.target.value)}
               placeholder="気づいたこと・体調・フォームのポイントなど…"

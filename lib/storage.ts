@@ -258,6 +258,29 @@ export function getExerciseHistory(exerciseId: string): Array<{
   return result;
 }
 
+// ── Last Session Summary (for complete screen) ────────────────────────────────
+
+export interface ExerciseSummary {
+  name: string;
+  bodyPart: BodyPart;
+  setsLabel: string;   // "60kg × 8回（3セット）"
+  isNewPB: boolean;
+}
+
+export interface SessionSummary {
+  bodyPart: BodyPart;
+  exercises: ExerciseSummary[];
+  hasPB: boolean;
+}
+
+export function saveLastSessionSummary(summary: SessionSummary): void {
+  setItem('trememo_last_summary', summary);
+}
+
+export function getLastSessionSummary(): SessionSummary | null {
+  return getItem<SessionSummary | null>('trememo_last_summary', null);
+}
+
 // ── Body Weight ───────────────────────────────────────────────────────────────
 
 export function getBodyWeightHistory(): BodyWeightRecord[] {

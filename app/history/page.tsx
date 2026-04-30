@@ -56,8 +56,8 @@ function Empty({ message }: { message: string }) {
           <circle cx="9" cy="9" r="7" /><path d="M9 6v3M9 11v.5" />
         </svg>
       </div>
-      <p className="text-[#555] text-sm">{message}</p>
-      <p className="text-[#333] text-xs mt-1">トレーニングを記録すると表示されます</p>
+      <p className="text-white/50 text-sm">{message}</p>
+      <p className="text-white/30 text-xs mt-1">トレーニングを記録すると表示されます</p>
     </div>
   );
 }
@@ -127,7 +127,7 @@ function HistoryContent() {
           {TABS.map(({ key, label }) => (
             <button key={key} onClick={() => handleTabChange(key)}
               className={`flex-1 py-3 font-bold text-sm transition-all relative ${
-                tab === key ? 'text-[#00FF88]' : 'text-[#444]'
+                tab === key ? 'text-[#00FF88]' : 'text-white/40'
               }`}>
               {label}
               {tab === key && (
@@ -157,8 +157,8 @@ function HistoryContent() {
           {bwHistory.length > 0 && (
             <div className="bg-[#141414] border border-[#222] rounded-2xl p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] text-[#444] uppercase tracking-widest">体重推移</p>
-                <span className="text-xs text-[#555]">直近{Math.min(bwHistory.length, 30)}回</span>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest">体重推移</p>
+                <span className="text-xs text-white/40">直近{Math.min(bwHistory.length, 30)}回</span>
               </div>
               {/* Mini sparkline */}
               {bwHistory.length >= 2 && (() => {
@@ -194,7 +194,7 @@ function HistoryContent() {
                   const diff = prev ? Math.round((r.weight - prev.weight) * 10) / 10 : null;
                   return (
                     <div key={r.date} className="flex items-center justify-between py-1.5 border-b last:border-0 border-[#1A1A1A]">
-                      <span className="text-xs text-[#444]">
+                      <span className="text-xs text-white/40">
                         {new Date(r.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' })}
                       </span>
                       <div className="flex items-center gap-2">
@@ -203,7 +203,7 @@ function HistoryContent() {
                             {diff > 0 ? `+${diff}` : diff}kg
                           </span>
                         )}
-                        <span className={`text-sm font-black ${i === 0 ? 'text-[#00FF88]' : 'text-[#666]'}`}>
+                        <span className={`text-sm font-black ${i === 0 ? 'text-[#00FF88]' : 'text-white/60'}`}>
                           {r.weight}kg
                         </span>
                       </div>
@@ -233,11 +233,11 @@ function HistoryContent() {
                         <div className="font-black text-white text-sm">{fmtDate(session.date)}</div>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <span className="text-xs font-bold" style={{ color }}>{BODY_PART_LABELS[session.bodyPart]}</span>
-                          <span className="text-[#333] text-xs">·</span>
-                          <span className="text-xs text-[#555]">{session.exercises.length}種目 / {totalSets}セット</span>
+                          <span className="text-white/20 text-xs">·</span>
+                          <span className="text-xs text-white/50">{session.exercises.length}種目 / {totalSets}セット</span>
                           {session.durationSeconds > 0 && (
-                            <><span className="text-[#333] text-xs">·</span>
-                            <span className="text-xs text-[#555]">{formatDuration(session.durationSeconds)}</span></>
+                            <><span className="text-white/20 text-xs">·</span>
+                            <span className="text-xs text-white/50">{formatDuration(session.durationSeconds)}</span></>
                           )}
                         </div>
                       </div>
@@ -263,14 +263,14 @@ function HistoryContent() {
                               </div>
                               <div className="flex flex-wrap gap-1.5">
                                 {ex.sets.map((s, si) => (
-                                  <span key={si} className="text-xs bg-[#1A1A1A] border border-[#2A2A2A] px-2.5 py-1.5 rounded-xl text-[#888] font-medium">
-                                    <span className="text-[#444] mr-1">{si + 1}</span>
+                                  <span key={si} className="text-xs bg-[#1A1A1A] border border-[#2A2A2A] px-2.5 py-1.5 rounded-xl text-white/60 font-medium">
+                                    <span className="text-white/30 mr-1">{si + 1}</span>
                                     {formatSet(s, type)}
                                   </span>
                                 ))}
                               </div>
                               {ex.memo && (
-                                <p className="text-xs text-[#555] mt-2 pl-1">📝 {ex.memo}</p>
+                                <p className="text-xs text-white/40 mt-2 pl-1">📝 {ex.memo}</p>
                               )}
                             </div>
                           );
@@ -297,11 +297,11 @@ function HistoryContent() {
                   className="bg-[#141414] border border-[#222] rounded-2xl p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-[#555] text-sm font-bold">#{idx + 1}</span>
+                      <span className="text-white/50 text-sm font-bold">#{idx + 1}</span>
                       <span className="font-black text-white flex-1 pr-2">{pb.exerciseName}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[#444] text-xs">
+                      <span className="text-white/40 text-xs">
                         {new Date(pb.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                       </span>
                       <button
@@ -320,11 +320,11 @@ function HistoryContent() {
                       style={{ textShadow: '0 0 12px rgba(0,255,136,0.4)' }}>
                       {pb.weight % 1 === 0 ? pb.weight : pb.weight.toFixed(1)}
                     </span>
-                    <span className="text-[#555] text-sm">kg</span>
-                    <span className="text-[#333] text-xl font-light mx-1">×</span>
+                    <span className="text-white/50 text-sm">kg</span>
+                    <span className="text-white/20 text-xl font-light mx-1">×</span>
                     <span className="text-4xl font-black text-[#00FF88]"
                       style={{ textShadow: '0 0 12px rgba(0,255,136,0.4)' }}>{pb.reps}</span>
-                    <span className="text-[#555] text-sm">回</span>
+                    <span className="text-white/50 text-sm">回</span>
                   </div>
                   <div className="mt-2">
                     <span className="text-xs text-[#00FF88] font-bold bg-[#00FF88]/10 border border-[#00FF88]/20 px-2 py-0.5 rounded-full">

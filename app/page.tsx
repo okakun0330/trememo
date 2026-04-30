@@ -70,7 +70,7 @@ export default function HomePage() {
             style={{ textShadow: '0 0 24px rgba(0,255,136,0.4)' }}>
             トレメモ
           </h1>
-          <p className="text-[#444] text-[11px] mt-1">前回より伸びたかが一瞬でわかる</p>
+          <p className="text-white/40 text-[11px] mt-1">前回より伸びたかが一瞬でわかる</p>
         </div>
         <button onClick={() => router.push('/settings')}
           className="w-10 h-10 flex items-center justify-center rounded-full border border-[#222] text-[#555] active:text-white bg-[#141414]">
@@ -110,15 +110,15 @@ export default function HomePage() {
         <div className="bg-[#141414] border border-[#222] rounded-2xl p-5 animate-fadeInUp"
           style={{ animationDelay: '0.08s', boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] text-[#555] uppercase tracking-widest">今週の達成</span>
-            <span className="text-[10px] text-[#444]">目標 {weekly.goal}回</span>
+            <span className="text-[10px] text-white/50 uppercase tracking-widest">今週の達成</span>
+            <span className="text-[10px] text-white/40">目標 {weekly.goal}回</span>
           </div>
           <div className="flex items-end gap-2 mb-3">
             <span className="text-5xl font-black text-[#00FF88] leading-none"
               style={{ textShadow: '0 0 20px rgba(0,255,136,0.4)' }}>
               {weekly.count}
             </span>
-            <span className="text-[#333] text-3xl font-light mb-1">/ {weekly.goal}</span>
+            <span className="text-white/20 text-3xl font-light mb-1">/ {weekly.goal}</span>
             {weekly.count >= weekly.goal && (
               <span className="text-[#00FF88] text-xs font-bold mb-1 ml-auto px-2 py-0.5 rounded-full bg-[#00FF88]/10 border border-[#00FF88]/20">
                 達成！🎉
@@ -133,7 +133,7 @@ export default function HomePage() {
                 boxShadow: '0 0 10px rgba(0,255,136,0.5)',
               }} />
           </div>
-          {lastDate && <p className="text-[10px] text-[#333] mt-2">前回：{lastDate}</p>}
+          {lastDate && <p className="text-[10px] text-white/30 mt-2">前回：{lastDate}</p>}
         </div>
 
         {/* Body weight quick record */}
@@ -146,9 +146,9 @@ export default function HomePage() {
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-[#444] uppercase tracking-widest leading-tight">体重</p>
+            <p className="text-[10px] text-white/40 uppercase tracking-widest leading-tight">体重</p>
             {prevWeight && (
-              <p className="text-[9px] text-[#333] mt-0.5">前回: {prevWeight}kg</p>
+              <p className="text-[9px] text-white/30 mt-0.5">前回: {prevWeight}kg</p>
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -162,7 +162,7 @@ export default function HomePage() {
                 placeholder="00.0"
                 className="w-16 text-center text-white text-sm font-bold bg-transparent outline-none px-2 py-2 placeholder-[#333]"
               />
-              <span className="text-[#444] text-xs pr-2">kg</span>
+              <span className="text-white/40 text-xs pr-2">kg</span>
             </div>
             <button onClick={handleBwSave}
               className={`px-3 py-2 rounded-xl text-xs font-black transition-all active:scale-95 ${
@@ -186,7 +186,7 @@ export default function HomePage() {
         </button>
 
         <button onClick={() => router.push('/history')}
-          className="w-full py-4 rounded-2xl bg-[#141414] border border-[#222] text-[#888] font-bold text-base active:scale-[0.97] transition-transform flex items-center justify-center gap-2 animate-fadeInUp"
+          className="w-full py-4 rounded-2xl bg-[#141414] border border-[#222] text-white/60 font-bold text-base active:scale-[0.97] transition-transform flex items-center justify-center gap-2 animate-fadeInUp"
           style={{ animationDelay: '0.17s' }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="1,12 5,8 8,10 11,5 15,7"/>
