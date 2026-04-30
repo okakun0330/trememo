@@ -2,8 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSessions, getPersonalBests } from '@/lib/storage';
-import { BODY_PART_LABELS, ExerciseType, PersonalBest, WorkoutSession, WorkoutSet } from '@/lib/types';
+import { getSessions, getPersonalBests, getBodyWeightHistory } from '@/lib/storage';
+import { BODY_PART_LABELS, BodyWeightRecord, ExerciseType, PersonalBest, WorkoutSession, WorkoutSet } from '@/lib/types';
 import WorkoutCalendar from '../components/WorkoutCalendar';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
 import BottomNav from '../components/BottomNav';
@@ -80,11 +80,14 @@ function HistoryContent() {
   const [tab, setTab] = useState<Tab>(initTab);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [chartEx, setChartEx] = useState<{ id: string; name: string } | null>(null);
+  const [bwHistory, setBwHistory] = useState<BodyWeightRecord[]>([]);
 
   useEffect(() => {
     const all = getSessions();
     setSessions([...all].reverse());
     setPBs(Object.values(getPersonalBests()).sort((a, b) => b.estimated1RM - a.estimated1RM));
+    const bw = getBodyWeightHistory();
+    setBwHistory([...bw].reverse().slice(0, 30));
   }, []);
 
   // sync tab when URL changes (e.g. back-nav from BottomNav)
@@ -149,6 +152,68 @@ function HistoryContent() {
       {/* ── History ── */}
       {tab === 'history' && (
         <div className="px-6 animate-fadeInUp">
+
+          {/* Body weight history */}
+          {bwHistory.length > 0 && (
+            <div className="bg-[#141414] border border-[#222] rounded-2xl p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] text-[#444] uppercase tracking-widest">体重推移</p>
+                <span className="text-xs text-[#555]">直近{Math.min(bwHistory.length, 30)}回</span>
+              </div>
+              {/* Mini sparkline */}
+              {bwHistory.length >= 2 && (() => {
+                const vals = [...bwHistory].reverse().slice(-14).map(r => r.weight);
+                const min = Math.min(...vals);
+                const max = Math.max(...vals);
+                const range = max - min || 1;
+                const W = 260, H = 40, PAD = 4;
+                const pts = vals.map((v, i) => {
+                  const x = PAD + (i / (vals.length - 1)) * (W - PAD * 2);
+                  const y = H - PAD - ((v - min) / range) * (H - PAD * 2);
+                  return `${x},${y}`;
+                }).join(' ');
+                return (
+                  <div className="mb-3 overflow-hidden">
+                    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="40">
+                      <polyline points={pts} fill="none" stroke="#00FF88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      {vals.map((v, i) => {
+                        const x = PAD + (i / (vals.length - 1)) * (W - PAD * 2);
+                        const y = H - PAD - ((v - min) / range) * (H - PAD * 2);
+                        return i === vals.length - 1
+                          ? <circle key={i} cx={x} cy={y} r="3.5" fill="#00FF88" stroke="#0D0D0D" strokeWidth="1.5"/>
+                          : <circle key={i} cx={x} cy={y} r="2" fill="#0D0D0D" stroke="#00FF88" strokeWidth="1.5"/>;
+                      })}
+                    </svg>
+                  </div>
+                );
+              })()}
+              {/* Latest 5 records */}
+              <div className="flex flex-col gap-0 max-h-36 overflow-y-auto">
+                {bwHistory.slice(0, 8).map((r, i) => {
+                  const prev = bwHistory[i + 1];
+                  const diff = prev ? Math.round((r.weight - prev.weight) * 10) / 10 : null;
+                  return (
+                    <div key={r.date} className="flex items-center justify-between py-1.5 border-b last:border-0 border-[#1A1A1A]">
+                      <span className="text-xs text-[#444]">
+                        {new Date(r.date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' })}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {diff !== null && diff !== 0 && (
+                          <span className={`text-[9px] font-bold ${diff > 0 ? 'text-red-400' : 'text-[#00FF88]'}`}>
+                            {diff > 0 ? `+${diff}` : diff}kg
+                          </span>
+                        )}
+                        <span className={`text-sm font-black ${i === 0 ? 'text-[#00FF88]' : 'text-[#666]'}`}>
+                          {r.weight}kg
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {sessions.length === 0 ? (
             <Empty message="まだトレーニング記録がありません" />
           ) : (

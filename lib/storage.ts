@@ -1,5 +1,6 @@
 import {
   BodyPart,
+  BodyWeightRecord,
   CurrentSession,
   Exercise,
   ExerciseType,
@@ -38,6 +39,7 @@ const KEYS = {
   CURRENT_SESSION: 'trememo_current_session',
   WEEKLY_GOAL: 'trememo_weekly_goal',
   USER_NAME: 'trememo_user_name',
+  BODY_WEIGHT: 'trememo_body_weight',
 };
 
 function getItem<T>(key: string, defaultValue: T): T {
@@ -254,6 +256,30 @@ export function getExerciseHistory(exerciseId: string): Array<{
     }
   }
   return result;
+}
+
+// ── Body Weight ───────────────────────────────────────────────────────────────
+
+export function getBodyWeightHistory(): BodyWeightRecord[] {
+  return getItem<BodyWeightRecord[]>(KEYS.BODY_WEIGHT, []);
+}
+
+export function recordBodyWeight(weight: number): void {
+  const records = getBodyWeightHistory();
+  const today = new Date().toISOString().split('T')[0];
+  const idx = records.findIndex((r) => r.date === today);
+  if (idx >= 0) {
+    records[idx].weight = weight;
+  } else {
+    records.push({ date: today, weight });
+    records.sort((a, b) => a.date.localeCompare(b.date));
+  }
+  setItem(KEYS.BODY_WEIGHT, records);
+}
+
+export function getLatestBodyWeight(): BodyWeightRecord | null {
+  const records = getBodyWeightHistory();
+  return records.length ? records[records.length - 1] : null;
 }
 
 // ── Current Session ───────────────────────────────────────────────────────────

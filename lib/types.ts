@@ -13,11 +13,16 @@ export const BODY_PART_LABELS: Record<BodyPart, string> = {
 export const BODY_PART_EN: Record<BodyPart, string> = {
   chest: 'CHEST',
   back: 'BACK',
-  legs: 'LEGS',
-  shoulders: 'SHOULDERS',
-  arms: 'ARMS',
+  legs: 'LEG',
+  shoulders: 'SHOULDER',
+  arms: 'ARM',
   abs: 'ABS',
   cardio: 'CARDIO',
+};
+
+export type BodyWeightRecord = {
+  date: string;   // YYYY-MM-DD
+  weight: number; // kg
 };
 
 /** 種目タイプ：重量×回数 / 自重×回数 / 有酸素（時間・距離） */

@@ -4,12 +4,11 @@ import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { BODY_PART_LABELS, BODY_PART_EN, BodyPart } from '@/lib/types';
-import BodyPartIcon from '../components/BodyPartIcon';
 import { startNewSession } from '@/lib/storage';
 
 const PARTS: BodyPart[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'abs', 'cardio'];
 
-// Per-body-part glow color
+// Per-body-part accent color
 const PART_COLOR: Record<BodyPart, string> = {
   chest:     '#FF4455',
   back:      '#00CC88',
@@ -19,18 +18,6 @@ const PART_COLOR: Record<BodyPart, string> = {
   abs:       '#FF44BB',
   cardio:    '#00FF88',
 };
-
-function CardMascot({ bodyPart, size = 90 }: { color: string; bodyPart: BodyPart; size?: number }) {
-  return (
-    <Image
-      src={`/mascot/${bodyPart}.png`}
-      alt={bodyPart}
-      width={size}
-      height={size}
-      style={{ objectFit: 'contain' }}
-    />
-  );
-}
 
 function SelectContent() {
   const router = useRouter();
@@ -61,7 +48,7 @@ function SelectContent() {
 
       {/* Card grid */}
       <div className="px-5 grid grid-cols-2 gap-3 pb-12 animate-fadeInUp" style={{ animationDelay: '0.06s' }}>
-        {PARTS.map((key, idx) => {
+        {PARTS.map((key) => {
           const isRec   = key === recommend;
           const color   = PART_COLOR[key];
           const isCardio = key === 'cardio';
@@ -69,79 +56,90 @@ function SelectContent() {
           if (isCardio) {
             return (
               <button key={key} onClick={() => select(key)}
-                className="col-span-2 relative rounded-2xl overflow-hidden active:scale-[0.98] transition-transform flex items-center gap-4 px-6 py-4"
+                className="col-span-2 relative rounded-2xl overflow-hidden active:scale-[0.98] transition-transform flex items-center gap-0"
                 style={{
-                  background: `linear-gradient(135deg, #0D1810 0%, #071209 100%)`,
+                  height: 120,
+                  background: '#0D0D0D',
                   border: `1.5px solid ${color}33`,
-                  boxShadow: `0 0 20px ${color}18, 0 4px 16px rgba(0,0,0,0.5)`,
-                  animationDelay: `${idx * 0.04}s`,
+                  boxShadow: `0 0 24px ${color}18, 0 4px 16px rgba(0,0,0,0.5)`,
                 }}>
-                {/* Heartbeat bg */}
-                <div className="absolute inset-0 opacity-10 flex items-center">
-                  <svg viewBox="0 0 260 40" width="100%" preserveAspectRatio="none">
-                    <polyline points="0,20 35,20 50,5 60,35 70,8 82,20 130,20 145,5 155,35 165,8 178,20 230,20 245,5 255,35 260,20"
-                      fill="none" stroke={color} strokeWidth="2"/>
-                  </svg>
+                {/* Anatomy image on right */}
+                <div className="absolute right-0 top-0 bottom-0 w-44 z-0">
+                  <Image
+                    src="/anatomy/cardio.png"
+                    alt="cardio"
+                    fill
+                    style={{ objectFit: 'cover', objectPosition: 'center' }}
+                  />
+                  {/* Fade overlay toward left */}
+                  <div className="absolute inset-0"
+                    style={{ background: 'linear-gradient(to right, #0D0D0D 0%, #0D0D0D 20%, transparent 80%)' }} />
                 </div>
-                {/* Mascot */}
-                <div className="relative z-10 shrink-0">
-                  <CardMascot color={color} bodyPart={key} />
-                </div>
+
                 {/* Label */}
-                <div className="relative z-10 flex-1">
+                <div className="relative z-10 px-6 flex flex-col">
                   <div className="flex items-center gap-2 mb-1">
-                    <span style={{ color }}><BodyPartIcon bodyPart={key} size={18} /></span>
-                    {isRec && <span className="text-[9px] font-black text-black bg-[#00FF88] px-1.5 py-0.5 rounded">REC</span>}
+                    {isRec && (
+                      <span className="text-[9px] font-black text-black bg-[#00FF88] px-1.5 py-0.5 rounded">REC</span>
+                    )}
                   </div>
                   <div className="text-2xl font-black text-white">{BODY_PART_LABELS[key]}</div>
-                  <div className="text-[10px] tracking-widest mt-0.5" style={{ color: `${color}99` }}>
+                  <div className="text-[10px] tracking-widest mt-0.5 font-bold" style={{ color: `${color}BB` }}>
                     {BODY_PART_EN[key]}
                   </div>
                 </div>
+
                 {/* Arrow */}
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={`${color}88`} strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M5 3l5 5-5 5"/>
-                </svg>
+                <div className="relative z-10 ml-auto mr-5">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={`${color}88`} strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M5 3l5 5-5 5"/>
+                  </svg>
+                </div>
               </button>
             );
           }
 
           return (
             <button key={key} onClick={() => select(key)}
-              className="relative rounded-2xl overflow-hidden active:scale-[0.96] transition-transform flex flex-col items-center pt-5 pb-4 px-3"
+              className="relative rounded-2xl overflow-hidden active:scale-[0.96] transition-transform flex flex-col"
               style={{
                 aspectRatio: '3/4',
                 background: '#0D0D0D',
-                border: `1.5px solid ${color}30`,
-                boxShadow: `0 0 18px ${color}15, 0 4px 16px rgba(0,0,0,0.6)`,
-                animationDelay: `${idx * 0.04}s`,
+                border: `1.5px solid ${color}33`,
+                boxShadow: isRec
+                  ? `0 0 0 2px ${color}55, 0 0 24px ${color}22, 0 4px 16px rgba(0,0,0,0.6)`
+                  : `0 0 18px ${color}12, 0 4px 16px rgba(0,0,0,0.6)`,
               }}>
 
-              {/* Colored top glow */}
-              <div className="absolute top-0 left-0 right-0 h-20 pointer-events-none"
-                style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}20 0%, transparent 70%)` }} />
-
-              {/* Icon + REC */}
-              <div className="absolute top-3 left-3 z-10">
-                <span style={{ color }}><BodyPartIcon bodyPart={key} size={16} /></span>
+              {/* Anatomy image fills card */}
+              <div className="absolute inset-0">
+                <Image
+                  src={`/anatomy/${key}.png`}
+                  alt={key}
+                  fill
+                  style={{ objectFit: 'cover', objectPosition: 'top center' }}
+                />
+                {/* Bottom gradient for text */}
+                <div className="absolute inset-0"
+                  style={{ background: 'linear-gradient(to bottom, rgba(13,13,13,0.05) 30%, rgba(0,0,0,0.88) 100%)' }} />
+                {/* Top gradient for REC badge */}
+                <div className="absolute inset-0"
+                  style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 30%)' }} />
               </div>
+
+              {/* REC badge */}
               {isRec && (
-                <div className="absolute top-3 right-3 z-10 bg-[#00FF88] rounded-full px-1.5 py-0.5">
+                <div className="absolute top-3 right-3 z-10 bg-[#00FF88] rounded px-1.5 py-0.5">
                   <span className="text-[8px] text-black font-black">REC</span>
                 </div>
               )}
 
-              {/* Mascot */}
-              <div className="flex-1 flex items-center justify-center relative z-10 mt-2">
-                <div style={{ filter: `drop-shadow(0 0 10px ${color}55)` }}>
-                  <CardMascot color={color} bodyPart={key} />
+              {/* Label at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 z-10 px-3.5 pb-3.5 pt-2">
+                <div className="text-[1.15rem] font-black text-white leading-tight">
+                  {BODY_PART_LABELS[key]}
                 </div>
-              </div>
-
-              {/* Label */}
-              <div className="relative z-10 w-full px-1">
-                <div className="text-lg font-black text-white leading-tight">{BODY_PART_LABELS[key]}</div>
-                <div className="text-[9px] tracking-widest mt-0.5" style={{ color: `${color}88` }}>
+                <div className="text-[9px] tracking-widest mt-0.5 font-bold" style={{ color: `${color}CC` }}>
                   {BODY_PART_EN[key]}
                 </div>
               </div>

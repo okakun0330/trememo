@@ -19,8 +19,8 @@ import {
   BODY_PART_LABELS, BodyPart, Exercise, ExerciseRecord,
   ExerciseType, WorkoutSet,
 } from '@/lib/types';
+import Image from 'next/image';
 import ExerciseProgressChart from '../components/ExerciseProgressChart';
-import MuscleMouseMascot from '../components/MuscleMouseMascot';
 
 const ALL_BODY_PARTS: BodyPart[] = ['chest', 'back', 'legs', 'shoulders', 'arms', 'abs', 'cardio'];
 
@@ -484,7 +484,7 @@ function SessionContent() {
       {phase === 'recording' && currentExercise && (
         <div className="px-6 pt-5 pb-44 animate-fadeInUp">
 
-          {/* Exercise name header with mini mascot */}
+          {/* Exercise name header with anatomy image */}
           <div className="flex items-start gap-3 mb-5">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -505,9 +505,15 @@ function SessionContent() {
               </div>
               <h2 className="text-2xl font-black text-white leading-tight">{currentExercise.name}</h2>
             </div>
-            {/* Mini mascot (thumbs up) */}
-            <div className="shrink-0 -mt-1">
-              <MuscleMouseMascot size={64} variant="small" />
+            {/* Anatomy image for current body part */}
+            <div className="shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-[#222]">
+              <Image
+                src={`/anatomy/${currentBodyPart}.png`}
+                alt={currentBodyPart}
+                width={64}
+                height={64}
+                style={{ objectFit: 'cover', objectPosition: 'top center' }}
+              />
             </div>
           </div>
 

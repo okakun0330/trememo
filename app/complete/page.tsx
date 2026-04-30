@@ -2,8 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { getWeeklyStats } from '@/lib/storage';
-import MuscleMouseMascot from '../components/MuscleMouseMascot';
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -65,12 +65,19 @@ function CompleteContent() {
     <div className="min-h-screen bg-[#0A0A0A] text-white flex flex-col max-w-[430px] mx-auto px-5 relative overflow-hidden">
       {showConfetti && <Confetti />}
 
-      {/* Mascot + title */}
-      <div className="pt-14 pb-2 flex flex-col items-center animate-fadeInUp">
+      {/* Hero image + title */}
+      <div className="pt-12 pb-1 flex flex-col items-center animate-fadeInUp">
         <div className="animate-float">
-          <MuscleMouseMascot size={150} variant="celebrate" />
+          <Image
+            src="/anatomy/hero.png"
+            alt="complete"
+            width={200}
+            height={200}
+            style={{ objectFit: 'contain' }}
+            priority
+          />
         </div>
-        <h1 className="text-3xl font-black text-white mt-2 mb-1 text-center">トレーニング完了！</h1>
+        <h1 className="text-3xl font-black text-white mt-1 mb-1 text-center">トレーニング完了！</h1>
         <p className="text-[#555] text-sm">
           {goalAchieved ? '今週の目標達成！最高だ！🎉' : 'お疲れ様でした！'}
         </p>
