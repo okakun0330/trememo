@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
-  getWeeklyStats, getLastSession, getUserName,
+  getWeeklyStats, getLastSession,
   recordBodyWeight, getLatestBodyWeight,
 } from '@/lib/storage';
 import BottomNav from './components/BottomNav';
@@ -21,8 +21,7 @@ export default function HomePage() {
   const router = useRouter();
   const [weekly, setWeekly] = useState({ count: 0, goal: 3 });
   const [lastDate, setLastDate] = useState<string | null>(null);
-  const [userName, setUserName] = useState('');
-  const [message] = useState(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
+  const [message, setMessage] = useState(MESSAGES[0]);
 
   // Body weight state
   const [bwInput, setBwInput] = useState('');
@@ -39,7 +38,7 @@ export default function HomePage() {
         })
       );
     }
-    setUserName(getUserName());
+    setMessage(MESSAGES[Math.floor(Math.random() * MESSAGES.length)]);
     const latest = getLatestBodyWeight();
     if (latest) {
       setPrevWeight(latest.weight);
@@ -84,9 +83,6 @@ export default function HomePage() {
       {/* Hero: speech bubble + anatomy figure */}
       <div className="relative flex items-end px-5 pt-2 pb-0 animate-fadeInUp" style={{ animationDelay: '0.04s' }}>
         <div className="flex-1 pb-4 pr-2 z-10">
-          {userName && (
-            <p className="text-[10px] text-[#555] mb-1.5">{userName}、お疲れ様！</p>
-          )}
           <div className="relative bg-[#141414] border border-[#2A2A2A] rounded-2xl rounded-bl-none px-4 py-3 inline-block max-w-[200px]"
             style={{ boxShadow: '0 0 14px rgba(0,255,136,0.06)' }}>
             <p className="text-sm font-black text-white leading-snug">{message}</p>

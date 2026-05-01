@@ -1,25 +1,21 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getWeeklyGoal, setWeeklyGoal, getUserName, setUserName } from '@/lib/storage';
+import { getWeeklyGoal, setWeeklyGoal } from '@/lib/storage';
 import BottomNav from '../components/BottomNav';
 
 export default function SettingsPage() {
   const router = useRouter();
   const [goal, setGoal] = useState(3);
-  const [name, setName] = useState('');
   const [savedMsg, setSavedMsg] = useState('');
-  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setGoal(getWeeklyGoal());
-    setName(getUserName());
   }, []);
 
   const saveAll = () => {
     setWeeklyGoal(goal);
-    setUserName(name);
     setSavedMsg('保存しました ✓');
     setTimeout(() => setSavedMsg(''), 1800);
   };
@@ -33,35 +29,7 @@ export default function SettingsPage() {
         <p className="text-white text-sm mt-1">プロフィールとトレーニング目標を設定</p>
       </div>
 
-      {/* ── Section 1: User name ── */}
-      <div className="mb-4 animate-fadeInUp" style={{ animationDelay: '0.06s' }}>
-        <div className="bg-[#141414] border border-[#222] rounded-2xl p-5">
-          <p className="text-xs text-white uppercase tracking-widest mb-1 font-bold">ニックネーム</p>
-          <p className="text-white text-xs mb-4 opacity-60">アプリ内で表示される名前を設定します</p>
-          <div className="relative">
-            <input
-              ref={nameInputRef}
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="例：マッスル太郎"
-              maxLength={20}
-              className="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white text-base px-4 py-3.5 rounded-xl outline-none focus:border-[#00FF88] placeholder-[#444] transition-colors"
-            />
-            {name && (
-              <button onClick={() => setName('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-[#2A2A2A] text-white">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <path d="M1 1l8 8M9 1l-8 8"/>
-                </svg>
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-white opacity-30 mt-2 text-right">{name.length}/20</p>
-        </div>
-      </div>
-
-      {/* ── Section 2: Weekly goal ── */}
+      {/* ── Section: Weekly goal ── */}
       <div className="mb-5 animate-fadeInUp" style={{ animationDelay: '0.10s' }}>
         <div className="bg-[#141414] border border-[#222] rounded-2xl p-5">
           <p className="text-xs text-white uppercase tracking-widest mb-1 font-bold">週のトレーニング目標</p>
