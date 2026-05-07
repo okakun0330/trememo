@@ -43,7 +43,7 @@ function formatSetDisplay(s: WorkoutSet, type: ExerciseType): string {
   return `${w}kg × ${s.reps}回`;
 }
 
-// ── Timer ──────────────────────────────────────────────────────────────────────
+// ── Session elapsed timer ──────────────────────────────────────────────────────
 function useTimer(startTime: string | null): string {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -59,6 +59,81 @@ function useTimer(startTime: string | null): string {
   const s = elapsed % 60;
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// ── Rest Timer overlay ────────────────────────────────────────────────────────
+const REST_PRESETS = [30, 60, 90, 120, 180];
+
+function RestTimerOverlay({
+  seconds,
+  total,
+  onSkip,
+  onPreset,
+}: {
+  seconds: number;
+  total: number;
+  onSkip: () => void;
+  onPreset: (s: number) => void;
+}) {
+  const pct = total > 0 ? seconds / total : 0;
+  const size = 96;
+  const r = 40;
+  const circ = 2 * Math.PI * r;
+  const dash = circ * pct;
+
+  const fmt = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}:${String(sec).padStart(2, '0')}` : `${sec}`;
+  };
+
+  return (
+    <div className="fixed bottom-28 left-0 right-0 max-w-[430px] mx-auto px-5 z-40 animate-fadeInUp">
+      <div className="bg-[#141414] border border-[#2A2A2A] rounded-2xl p-4"
+        style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+        <div className="flex items-center gap-4">
+          {/* Circular progress */}
+          <div className="relative shrink-0">
+            <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#1A1A1A" strokeWidth="5" />
+              <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+                stroke={seconds <= 10 ? '#f87171' : '#00FF88'} strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={`${dash} ${circ}`}
+                style={{ transition: 'stroke-dasharray 0.9s linear, stroke 0.3s' }} />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className={`text-2xl font-black tabular-nums ${seconds <= 10 ? 'text-red-400' : 'text-white'}`}>
+                {fmt(seconds)}
+              </span>
+              <span className="text-[9px] text-white/30 uppercase tracking-widest">休憩</span>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-white/40 mb-2">プリセット</p>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {REST_PRESETS.map((s) => (
+                <button key={s} onClick={() => onPreset(s)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    total === s && seconds === s
+                      ? 'bg-[#00FF88] text-black'
+                      : 'bg-[#222] text-white/60 active:bg-[#333]'
+                  }`}>
+                  {s < 60 ? `${s}s` : `${s / 60}分`}
+                </button>
+              ))}
+            </div>
+            <button onClick={onSkip}
+              className="w-full py-2 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/25 text-[#00FF88] text-sm font-bold active:bg-[#00FF88]/20 transition-colors">
+              スキップ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── NumInput (weight / reps) ────────────────────────────────────────────────
@@ -103,7 +178,6 @@ function NumInput({
               if (!isNaN(num) && num >= min) onChange(num);
             }}
             onBlur={() => setInputVal(fmt(value))}
-            /* w-28 = 7rem = 112px — wide enough for "100.0" at 5xl */
             className="w-28 text-5xl font-black text-[#00FF88] text-center bg-transparent outline-none"
             style={{ textShadow: '0 0 12px rgba(0,255,136,0.4)' }}
           />
@@ -130,7 +204,6 @@ function CardioInput({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      {/* Time row */}
       <div>
         <p className="text-[10px] text-white/50 uppercase tracking-widest mb-2">時間</p>
         <div className="flex gap-2">
@@ -156,7 +229,6 @@ function CardioInput({
           </div>
         </div>
       </div>
-      {/* Distance (optional) */}
       <div>
         <p className="text-[10px] text-white/50 uppercase tracking-widest mb-2">距離（任意）</p>
         <div className="flex items-center bg-[#141414] border border-[#222] rounded-xl overflow-hidden">
@@ -230,9 +302,66 @@ function SessionContent() {
   const [completedExercises, setCompletedExercises] = useState<ExerciseRecord[]>([]);
   const [todaySetCount, setTodaySetCount] = useState(0);
 
+  // ── Rest timer state ──
+  const [restSeconds, setRestSeconds] = useState(0);
+  const [restTotal, setRestTotal] = useState(90);
+  const [restActive, setRestActive] = useState(false);
+  const restRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startRest = (secs: number) => {
+    if (restRef.current) clearInterval(restRef.current);
+    setRestTotal(secs);
+    setRestSeconds(secs);
+    setRestActive(true);
+    restRef.current = setInterval(() => {
+      setRestSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(restRef.current!);
+          setRestActive(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const stopRest = () => {
+    if (restRef.current) clearInterval(restRef.current);
+    setRestActive(false);
+    setRestSeconds(0);
+  };
+
+  useEffect(() => () => { if (restRef.current) clearInterval(restRef.current); }, []);
+
+  // ── Lifecycle ──
   useEffect(() => { setHistoryExercises(getExercisesByBodyPart(currentBodyPart)); }, [currentBodyPart]);
   useEffect(() => { setTodaySetCount(getTodaySavedSets()); }, []);
   useEffect(() => { if (!getCurrentSession()) router.replace('/'); }, [router]);
+
+  // ── Browser back protection ──
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    const handlePopState = () => {
+      const confirmed = window.confirm('セッションを終了してホームに戻りますか？\n記録中のデータは失われます。');
+      if (confirmed) {
+        setCurrentSession(null);
+        router.replace('/');
+      } else {
+        // Push state back so back button doesn't navigate away
+        window.history.pushState(null, '', window.location.href);
+      }
+    };
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [router]);
 
   useEffect(() => {
     if (!currentExercise) return;
@@ -266,6 +395,7 @@ function SessionContent() {
     const t = ex.exerciseType || classifyExercise(ex.name);
     setExerciseType(t);
     setCurrentSets([]); setMemo(''); setEditIndex(null);
+    stopRest();
     setPhase('recording');
   };
 
@@ -277,7 +407,31 @@ function SessionContent() {
     setHistoryExercises(getExercisesByBodyPart(currentBodyPart));
     setCurrentExercise(ex);
     setCurrentSets([]); setMemo(''); setEditIndex(null); setInputValue('');
+    stopRest();
     setPhase('recording');
+  };
+
+  // ← 記録フェーズ → 種目選択に戻る（セット未保存は破棄）
+  const backToSelecting = () => {
+    if (currentSets.length > 0) {
+      const ok = window.confirm(`「${currentExercise?.name}」の記録を破棄して戻りますか？`);
+      if (!ok) return;
+    }
+    stopRest();
+    setCurrentExercise(null); setCurrentSets([]); setMemo('');
+    setEditIndex(null); setPBNotice(null);
+    setPhase('selecting');
+  };
+
+  // セッション全体を終了してホームへ
+  const exitSession = () => {
+    if (completedExercises.length > 0 || currentSets.length > 0) {
+      const ok = window.confirm('セッションを終了してホームに戻りますか？\n記録中のデータは失われます。');
+      if (!ok) return;
+    }
+    stopRest();
+    setCurrentSession(null);
+    router.replace('/');
   };
 
   const handleSetComplete = () => {
@@ -298,6 +452,8 @@ function SessionContent() {
     if (currentExercise && exerciseType === 'WEIGHT') {
       updatePersonalBest(currentExercise.id, currentExercise.name, weight, reps);
     }
+    // Start rest timer after set
+    startRest(restTotal);
   };
 
   const startEditSet = (i: number) => {
@@ -345,6 +501,7 @@ function SessionContent() {
     setCompletedExercises(updated);
     const sess = getCurrentSession();
     if (sess && record) { sess.exercises = updated; setCurrentSession(sess); }
+    stopRest();
     setCurrentExercise(null); setCurrentSets([]); setMemo('');
     setEditIndex(null); setPBNotice(null); setInputValue('');
     setHistoryExercises(getExercisesByBodyPart(currentBodyPart));
@@ -359,7 +516,6 @@ function SessionContent() {
       ? Math.floor((Date.now() - new Date(sess.startTime).getTime()) / 1000) : 0;
     if (sess) {
       saveSession({ id: sess.id, date: new Date().toISOString(), bodyPart: initBodyPart, exercises: all, durationSeconds: duration });
-      // Build and save session summary for complete page
       const hasPB = all.some((e) => e.isNewPB);
       const summaryExercises = all.map((e) => {
         const maxSet = e.sets.length > 0 ? e.sets.reduce((b, s) =>
@@ -380,6 +536,7 @@ function SessionContent() {
       saveLastSessionSummary({ bodyPart: initBodyPart, exercises: summaryExercises, hasPB });
       setCurrentSession(null);
     }
+    stopRest();
     const total = all.reduce((t, e) => t + e.sets.length, 0);
     router.push(`/complete?sets=${total}&duration=${duration}`);
   };
@@ -396,13 +553,25 @@ function SessionContent() {
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-[#0D0D0D] border-b border-[#1F1F1F] px-5 py-3">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.replace('/')}
-            className="flex items-center gap-1.5 text-white/50 active:text-white transition-colors text-sm shrink-0">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M9 2L4 7l5 5"/>
-            </svg>
-            終了
-          </button>
+          {/* 左ボタン: recordingフェーズなら「← 戻る」、selectingなら「終了」 */}
+          {phase === 'recording' ? (
+            <button onClick={backToSelecting}
+              className="flex items-center gap-1.5 text-white/50 active:text-white transition-colors text-sm shrink-0">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M9 2L4 7l5 5"/>
+              </svg>
+              戻る
+            </button>
+          ) : (
+            <button onClick={exitSession}
+              className="flex items-center gap-1.5 text-white/50 active:text-white transition-colors text-sm shrink-0">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M9 2L4 7l5 5"/>
+              </svg>
+              終了
+            </button>
+          )}
+
           <div className="flex-1 flex items-center justify-center gap-4">
             <div className="text-center">
               <div className="text-2xl font-black text-white tabular-nums leading-tight">{timer}</div>
@@ -415,6 +584,14 @@ function SessionContent() {
               <div className="text-[9px] text-white/30 uppercase tracking-widest">今日のセット</div>
             </div>
           </div>
+
+          {/* 右: 終了ボタン（recordingフェーズのみ表示） */}
+          {phase === 'recording' && (
+            <button onClick={finishTraining}
+              className="text-[#00FF88] text-sm font-bold shrink-0 active:opacity-70 transition-opacity">
+              完了
+            </button>
+          )}
         </div>
       </div>
 
@@ -516,7 +693,7 @@ function SessionContent() {
                 </span>
                 {exerciseType === 'WEIGHT' && (
                   <button onClick={() => setShowChart(true)} title="成長グラフ"
-                    className="w-7 h-7 flex items-center justify-center rounded-full border border-[#2A2A2A] bg-[#1A1A1A] text-[#555] active:bg-[#222] transition-colors">
+                    className="w-7 h-7 flex items-center justify-center rounded-full border border-[#2A2A2A] bg-[#1A1A1A] text-white/40 active:bg-[#222] transition-colors">
                     <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="1,11 4,7 7,9 10,4 13,6" />
                     </svg>
@@ -525,7 +702,6 @@ function SessionContent() {
               </div>
               <h2 className="text-2xl font-black text-white leading-tight">{currentExercise.name}</h2>
             </div>
-            {/* Anatomy image for current body part */}
             <div className="shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-[#222]">
               <Image
                 src={`/anatomy/${currentBodyPart}.png`}
@@ -537,7 +713,7 @@ function SessionContent() {
             </div>
           </div>
 
-          {/* Previous MAX (WEIGHT only) */}
+          {/* Previous MAX */}
           {lastMax && exerciseType === 'WEIGHT' && (
             <div className="bg-[#141414] border border-[#222] rounded-2xl p-4 mb-4">
               <p className="text-[10px] text-white/40 uppercase tracking-widest mb-2">
@@ -591,7 +767,7 @@ function SessionContent() {
           {/* Complete button */}
           <button onClick={handleSetComplete}
             className="w-full py-4 rounded-xl bg-[#00FF88] text-black font-black text-base active:scale-[0.97] transition-transform mb-5 glow-btn">
-            {exerciseType === 'CARDIO' ? '記録する' : 'セット完了'}
+            {exerciseType === 'CARDIO' ? '記録する' : `セット完了 (${currentSets.length + 1}セット目)`}
           </button>
 
           {/* Sets list */}
@@ -603,7 +779,6 @@ function SessionContent() {
               <div className="flex flex-col gap-2">
                 {currentSets.map((s, i) =>
                   editIndex === i && exerciseType === 'WEIGHT' ? (
-                    /* Inline edit (WEIGHT only) */
                     <div key={i} className="bg-[#141414] border border-[#00FF88]/25 rounded-xl p-4 animate-scaleIn">
                       <p className="text-[10px] text-white/50 uppercase tracking-widest mb-3">Set {i + 1} を編集</p>
                       <div className="flex gap-3 mb-3">
@@ -642,7 +817,6 @@ function SessionContent() {
                       </div>
                     </div>
                   ) : (
-                    /* Normal row */
                     <div key={i} className="bg-[#141414] border border-[#222] rounded-xl px-4 py-3 flex items-center gap-3">
                       <span className="text-white/40 text-sm font-medium w-12 shrink-0">
                         {exerciseType === 'CARDIO' ? `#${i + 1}` : `Set ${i + 1}`}
@@ -653,7 +827,7 @@ function SessionContent() {
                       <div className="flex gap-1.5">
                         {exerciseType === 'WEIGHT' && (
                           <button onClick={() => startEditSet(i)}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-[#666] active:bg-[#222] transition-colors">
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#1A1A1A] border border-[#2A2A2A] text-white/40 active:bg-[#222] transition-colors">
                             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z" />
                             </svg>
@@ -686,6 +860,16 @@ function SessionContent() {
         </div>
       )}
 
+      {/* Rest timer overlay */}
+      {restActive && (
+        <RestTimerOverlay
+          seconds={restSeconds}
+          total={restTotal}
+          onSkip={stopRest}
+          onPreset={(s) => startRest(s)}
+        />
+      )}
+
       {/* Bottom bar (recording phase) */}
       {phase === 'recording' && (
         <div className="fixed bottom-0 left-0 right-0 max-w-[430px] mx-auto px-6 pb-10 pt-5"
@@ -693,7 +877,7 @@ function SessionContent() {
           <div className="flex gap-3">
             <button onClick={goToNextMenu}
               className="flex-1 py-4 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] text-white font-bold text-base active:scale-[0.97] transition-transform">
-              次のメニュー
+              次のメニューへ
             </button>
             <button onClick={finishTraining}
               className="flex-1 py-4 rounded-xl border border-[#00FF88]/30 bg-[#00FF88]/10 text-[#00FF88] font-bold text-base active:scale-[0.97] transition-transform">
