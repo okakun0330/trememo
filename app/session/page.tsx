@@ -509,6 +509,11 @@ function SessionContent() {
   };
 
   const finishTraining = () => {
+    const totalSetsNow = completedExercises.reduce((t, e) => t + e.sets.length, 0) + currentSets.length;
+    if (totalSetsNow > 0) {
+      const ok = window.confirm('トレーニングを終了して記録を保存しますか？');
+      if (!ok) return;
+    }
     const record = saveCurrentExercise();
     const all = record ? [...completedExercises, record] : completedExercises;
     const sess = getCurrentSession();
